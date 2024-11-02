@@ -5,6 +5,8 @@ from app.repositories.child_repository import ChildRepository
 from app.models.assessment import Assessment
 from app.utils.db import db
 from app.repositories.exercise_repository import ExerciseRepository
+from app.models.personalization_question import PersonalizationQuestion
+from app.models.question_mental_health import QuestionMentalHealth
 
 class PsychologistService:
 
