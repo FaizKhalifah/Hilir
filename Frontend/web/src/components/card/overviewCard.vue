@@ -1,7 +1,7 @@
 <template>
     <div class="overview">
         <h2>Overview</h2>
-        <div class="summary">
+        <div class="summary" style="margin-bottom: 3rem">
             <div class="childrenCard">
             <p>Total children </p>
             <p>{{ childrenTotal }}</p>

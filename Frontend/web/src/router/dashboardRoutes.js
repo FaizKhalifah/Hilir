@@ -2,6 +2,7 @@ import overview from "@/views/dashboard/overview.vue";
 import ruangHilir from "@/views/dashboard/ruangHilir.vue";
 import assesment from "@/views/dashboard/assesment.vue";
 import exercise from "@/views/dashboard/exercise.vue";
+import prompt from "@/views/dashboard/prompt.vue";
 export default[
     {
         path:'/overview',
@@ -20,6 +21,12 @@ export default[
     path:'/ruanghilir',
     name:'ruanghilir',
     component:ruangHilir,
+    meta: { requiresAuth: true}
+  },
+  {
+    path:'/prompt',
+    name:'prompt',
+    component:prompt,
     meta: { requiresAuth: true}
   },
   {
