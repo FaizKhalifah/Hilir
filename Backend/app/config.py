@@ -16,3 +16,6 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
     OTP_EXPIRATION_MINUTES = 5
+    GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+

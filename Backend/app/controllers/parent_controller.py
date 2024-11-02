@@ -4,13 +4,17 @@ from flask import Blueprint, request, jsonify
 from app.services.parent_service import ParentService
 from app.models.parent import Parent
 from app.utils.db import db
-from app.utils.email_utils import send_otp_email
 from app.utils.jwt_utils import generate_parent_jwt_token, parent_required
-from werkzeug.security import generate_password_hash, check_password_hash
 from app.services.child_service import ChildService
 from app.services.personalization_service import PersonalizationService
 from app.services.psychologist_service import PsychologistService
 from app.services.consultation_service import ConsultationService
+from app.repositories.exercise_repository import ExerciseRepository
+from datetime import date
+from app.services.assessment_service import AssessmentService
+from app.utils.gemini_api import GeminiAPI
+from app.repositories.child_repository import ChildRepository
+from app.services.chatbot_service import ChatbotService
 
 parent_bp = Blueprint("parent_bp", __name__)
 
@@ -365,3 +369,161 @@ def assign_exercises_to_child(child_id):
             for exercise in exercises
         ]
     }), 200
+
+
+
+@parent_bp.route('/child/<int:childid>/exercise', methods=['POST'])
+@parent_required
+def child_chat(childid):
+    parent_id = request.parent_id
+    
+    # Verify if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(childid, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Generate exercises for the child based on mental health issues above threshold
+    exercises, error = ChildService.assign_exercises_based_on_issues(childid)
+    
+    if error:
+        return jsonify({"error": error}), 500
+
+    # Store exercises in database
+    stored_exercises = []
+    db_errors = []
+    
+    for exercise in exercises:
+        stored_exercise, db_error = ExerciseRepository.create_exercise_with_child(
+            title=exercise["title"],
+            description=exercise["description"],
+            mental_health_issue_id=exercise["mental_health_issue_id"],
+            child_id=childid
+        )
+        
+        if db_error:
+            db_errors.append(db_error)
+        elif stored_exercise:
+            stored_exercises.append({
+                "id": stored_exercise.id,
+                "title": stored_exercise.title,
+                "description": stored_exercise.description,
+                "mental_health_issue_id": stored_exercise.mental_health_issue_id,
+                "assigned_date": date.today().isoformat()
+            })
+
+    # If there were any database errors, include them in the response
+    response_data = {
+        "childid": childid,
+        "exercises": stored_exercises,
+    }
+    
+    if db_errors:
+        response_data["warnings"] = db_errors
+
+    # Return success even if some exercises failed to store
+    status_code = 207 if db_errors else 200  # 207 Multi-Status if partial success
+    return jsonify(response_data), status_code
+
+@parent_bp.route('/child/<int:child_id>/assessment', methods=['POST'])
+@parent_required
+def generate_and_assign_assessments(child_id):
+    """
+    Generates and assigns multiple assessments for a child based on mental health needs.
+    """
+    # Retrieve mental health issues that exceed the threshold (limit to 3)
+    child_personalizations = ChildRepository.get_child_personalizations(child_id)
+    exceeded_issues = [
+        {"id": personalization.mental_health_issue_id, "name": personalization.mental_health_issue.name}
+        for personalization in child_personalizations
+        if personalization.personalization_score >= personalization.mental_health_issue.threshold_score
+    ][:3]
+
+    if not exceeded_issues:
+        return jsonify({"error": "No mental health issues exceed the threshold for an assessment."}), 400
+
+    # Generate prompts for each mental health issue
+    prompts = AssessmentService.generate_assessment_prompts(exceeded_issues)
+    assessments = []
+    db_errors = []
+
+    # Generate an assessment for each prompt
+    for prompt, issue in zip(prompts, exceeded_issues):
+        # Get task description from Gemini API
+        response_json, error = GeminiAPI.get_exercises_for_prompt(prompt)
+        if error:
+            db_errors.append(f"Failed to fetch assessment for {issue['name']} from Gemini API: {error}")
+            continue
+
+        # Parse response for task description
+        task_description = response_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+        if not task_description:
+            db_errors.append(f"No valid task description for {issue['name']}.")
+            continue
+
+        # Create and save the assessment
+        assessment, db_error = AssessmentService.create_assessment_for_child(
+            child_id=child_id,
+            task_description=task_description,
+            days_to_complete=7
+        )
+        
+        if db_error:
+            db_errors.append(f"Database error for {issue['name']}: {db_error}")
+        elif assessment:
+            assessments.append({
+                "assessment_id": assessment.id,
+                "task_description": assessment.task_description,
+                "due_date": assessment.due_date.isoformat(),
+                "mental_health_issue_id": issue["id"],
+                "mental_health_issue_name": issue["name"]
+            })
+
+    # If there were errors, include them in the response
+    response_data = {
+        "child_id": child_id,
+        "assessments": assessments,
+    }
+    if db_errors:
+        response_data["warnings"] = db_errors
+
+    status_code = 207 if db_errors else 200  # 207 Multi-Status if partial success
+    return jsonify(response_data), status_code
+
+@parent_bp.route('/child/<int:child_id>/chat', methods=['POST'])
+@parent_required
+def chat_with_bot(child_id):
+    """
+    Chatbot route to assist parents by answering questions based on the child’s mental health data.
+    """
+    # Retrieve the message from the parent
+    parent_message = request.json.get("message")
+    if not parent_message:
+        return jsonify({"error": "Message is required"}), 400
+
+    # Use parent_id from JWT token
+    parent_id = request.parent_id
+
+    # Fetch child’s mental health issues that exceed the threshold
+    child_personalizations = ChildRepository.get_child_personalizations(child_id)
+    mental_health_issues = [
+        {"id": personalization.mental_health_issue_id, "name": personalization.mental_health_issue.name}
+        for personalization in child_personalizations
+        if personalization.personalization_score >= personalization.mental_health_issue.threshold_score
+    ]
+    
+    if not mental_health_issues:
+        return jsonify({"error": "No mental health issues exceed the threshold for this child."}), 400
+
+    # Generate chatbot prompt with child’s mental health context
+    prompt = ChatbotService.generate_chatbot_prompt(parent_message, mental_health_issues)
+
+    # Get chatbot response using Gemini API
+    response_json, error = GeminiAPI.get_exercises_for_prompt(prompt)
+    if error:
+        return jsonify({"error": f"Failed to fetch response from Gemini API: {error}"}), 500
+
+    # Extract response text
+    bot_response = response_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+    if not bot_response:
+        return jsonify({"error": "No valid response could be parsed from the chatbot."}), 500
+
+    return jsonify({"bot_response": bot_response}), 200
