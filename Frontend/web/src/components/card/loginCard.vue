@@ -14,6 +14,9 @@
           </label>
           <input type="password" v-model="password" />
           </div>
+          <div class="register">
+            <p>Dont have an account? Register  <a href="/register">here</a></p>
+          </div>
         <button type="submit">Login</button>
       </form>
       <img :src="require('@/assets/login.png')" alt="">
@@ -56,6 +59,7 @@
             }
             const data = await response.json();
             if(data){
+              localStorage.setItem('token', data.token);
               console.log('Success:', data);
               this.$router.push('/dashboard');
             }
