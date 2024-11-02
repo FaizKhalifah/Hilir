@@ -109,3 +109,33 @@ class PsychologistRepository:
             psychologist_id=psychologist_id,
             is_available=True
         ).all()
+    @staticmethod
+    def get_schedule_for_psychologist(psychologist_id):
+        """Retrieve the complete schedule of a psychologist."""
+        return PsychologistSchedule.query.filter_by(psychologist_id=psychologist_id).all()
+
+    @staticmethod
+    def get_available_slots_for_date(psychologist_id, requested_date):
+        """Check if there are any available slots for a given date for the psychologist."""
+        # Since schedules are assumed to be recurring daily.
+        schedules = PsychologistSchedule.query.filter_by(psychologist_id=psychologist_id, is_available=True).all()
+    
+        # Handling the case for today
+        if requested_date == datetime.now().date():
+            current_time = datetime.now().time()
+            available_on_requested_date = [
+                schedule for schedule in schedules if schedule.start_time > current_time
+            ]
+        else:
+            # If it's any other date, consider all slots as available for that day
+            available_on_requested_date = schedules
+
+        return available_on_requested_date
+
+    @staticmethod
+    def get_schedule_for_psychologist(psychologist_id):
+        """Retrieve the complete schedule of a psychologist."""
+        return PsychologistSchedule.query.filter_by(psychologist_id=psychologist_id).all()
+
+    
+    
