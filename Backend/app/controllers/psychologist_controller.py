@@ -1,11 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify
 from app.services.psychologist_service import PsychologistService
-from app.utils.jwt_utils import generate_psychologist_jwt_token, psychologist_required
+from app.utils.jwt_utils import generate_psychologist_jwt_token
 from datetime import datetime
 
-psychologist_bp = Blueprint("psychologist_bp", __name__)
-
-@psychologist_bp.route("/register", methods=["POST"])
 def register_psychologist():
     data = request.json
     required_fields = ["full_name", "email", "password", "specialization"]
@@ -21,7 +18,6 @@ def register_psychologist():
         "message": "Registration successful!"
     }), 201
 
-@psychologist_bp.route("/login", methods=["POST"])
 def login_psychologist():
     data = request.json
     email = data.get("email")
@@ -34,15 +30,11 @@ def login_psychologist():
     token = generate_psychologist_jwt_token(psychologist)
     return jsonify({"message": "Login successful", "token": token}), 200
 
-@psychologist_bp.route("/all_children", methods=["GET"])
-@psychologist_required
 def get_all_children_for_psychologist():
     psychologist_id = request.psychologist_id
     children = PsychologistService.get_all_children_for_psychologist(psychologist_id)
     return jsonify(children), 200
 
-@psychologist_bp.route("/child/<int:child_id>/report", methods=["GET"])
-@psychologist_required
 def get_child_report_for_psychologist(child_id):
     psychologist_id = request.psychologist_id
     report, error = PsychologistService.get_child_mental_health_report_for_psychologist(psychologist_id, child_id)
@@ -51,8 +43,6 @@ def get_child_report_for_psychologist(child_id):
 
     return jsonify(report), 200
 
-@psychologist_bp.route("/child/<int:child_id>/assign_exercise", methods=["POST"])
-@psychologist_required
 def add_and_assign_exercise_to_child(child_id):
     psychologist_id = request.psychologist_id
     data = request.json
@@ -75,8 +65,6 @@ def add_and_assign_exercise_to_child(child_id):
         }
     }), 201
 
-@psychologist_bp.route("/exercises", methods=["GET"])
-@psychologist_required
 def get_exercises_for_specialization():
     psychologist_id = request.psychologist_id
     exercises, error = PsychologistService.get_exercises_for_psychologist(psychologist_id)
@@ -85,8 +73,6 @@ def get_exercises_for_specialization():
 
     return jsonify(exercises), 200
 
-@psychologist_bp.route("/child/<int:child_id>/add_assessment", methods=["POST"])
-@psychologist_required
 def add_assessment(child_id):
     psychologist_id = request.psychologist_id
     data = request.json
@@ -110,8 +96,6 @@ def add_assessment(child_id):
         }
     }), 201
 
-@psychologist_bp.route("/child/<int:child_id>/add_assessment_with_questions", methods=["POST"])
-@psychologist_required
 def add_assessment_with_questions(child_id):
     psychologist_id = request.psychologist_id
     data = request.json
@@ -145,8 +129,6 @@ def add_assessment_with_questions(child_id):
         }
     }), 201
 
-@psychologist_bp.route("/all_assessments", methods=["GET"])
-@psychologist_required
 def get_all_assessments():
     psychologist_id = request.psychologist_id
     assessments, error = PsychologistService.get_all_assessments(psychologist_id)
@@ -155,8 +137,6 @@ def get_all_assessments():
 
     return jsonify(assessments), 200
 
-@psychologist_bp.route("/schedule", methods=["GET"])
-@psychologist_required
 def get_psychologist_schedule():
     psychologist_id = request.psychologist_id
     date_str = request.args.get('date')
