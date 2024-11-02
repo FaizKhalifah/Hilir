@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import com.example.mobilehilir.data.AnakList
 import com.example.mobilehilir.data.listItems
 
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RuangHilir(items: List<AnakList>) {
@@ -97,15 +99,15 @@ fun RuangHilir(items: List<AnakList>) {
                     ) {
                         Column {
                             Text(
-                                text = "John Doe",
+                                text = "Ravi",
                                 fontSize = 30.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Black
-                            )`
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Jenis Assesment : Nyanyikan Lagu Tidur",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
                                 color = Color.Black.copy(alpha = 0.7f)
                             )
                             Text(
@@ -119,9 +121,25 @@ fun RuangHilir(items: List<AnakList>) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
             items.forEach { item ->
-                AnakListItem(item = item, onClick =
-                })
+                AnakListItem(
+                    item = item,
+                    onClick = {
+                        // Action when clicked
+                    }
+                )
+            }
+            Button(
+                onClick = {
+                    // Handle button click
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = backgroundColor), // Change the button color here
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(text = "Tambah Hilirians", fontWeight = FontWeight.Bold, color = Color.White) // Change text color if needed
             }
         }
     }
@@ -133,9 +151,9 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
         modifier = Modifier
             .padding(10.dp)
             .clickable { onClick() }
-            .border(1.dp, Color.Black, shape = RoundedCornerShape(12.dp)), // Black border
+            .border(1.dp, Color.Black, shape = RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White) // White background
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -153,9 +171,10 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
                     style = TextStyle(
                         color = Color.Black,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 20.sp
                     )
                 )
+                Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = "${item.issue_name}, ${item.age} Tahun",
                     style = TextStyle(
@@ -164,9 +183,9 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
                         fontSize = 15.sp
                     )
                 )
-
             }
         }
+
     }
 }
 
