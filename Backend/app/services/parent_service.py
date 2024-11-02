@@ -3,6 +3,8 @@
 from app.repositories.parent_repository import ParentRepository
 from app.utils.email_utils import send_otp_email
 from app.models.parent import Parent
+from app.utils.db import db
+import app.models.assessment as Assessment
 
 class ParentService:
 

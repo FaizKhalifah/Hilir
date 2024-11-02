@@ -3,6 +3,7 @@ from app.models.question_mental_health import QuestionMentalHealth
 from app.models.child_personalization import ChildPersonalization
 from app.models.mental_health_issue import MentalHealthIssue
 from app.utils.db import db
+from sqlalchemy import select
 
 class QuestionRepository:
     @staticmethod
@@ -11,13 +12,15 @@ class QuestionRepository:
         # Get mental health issues that exceed the threshold
         exceeded_issues = db.session.query(ChildPersonalization.mental_health_issue_id).filter(
             ChildPersonalization.child_id == child_id,
-            ChildPersonalization.personalization_score >= db.session.query(MentalHealthIssue.threshold_score)
+            ChildPersonalization.personalization_score >= select(MentalHealthIssue.threshold_score).where(
+                MentalHealthIssue.id == ChildPersonalization.mental_health_issue_id
+            ).scalar_subquery()
         ).subquery()
 
         # Get questions associated with those mental health issues
         questions = db.session.query(PersonalizationQuestion).join(
             QuestionMentalHealth, QuestionMentalHealth.question_id == PersonalizationQuestion.id
-        ).filter(QuestionMentalHealth.mental_health_issue_id.in_(exceeded_issues)).all()
+        ).filter(QuestionMentalHealth.mental_health_issue_id.in_(select(exceeded_issues.c.mental_health_issue_id))).all()
 
         return questions
 
