@@ -4,7 +4,7 @@
             <form @submit.prevent="handleRegister">
             <div id="fullName">
                 <label>Full Name:</label>
-                <input type="text" v-model="fullName" />
+                <input type="text" v-model="full_name" />
             </div>
             <div id="email">
                 <label>Email : </label>
@@ -97,7 +97,7 @@
         },
         data() {
             return {
-                fullName : "",
+                full_name : "",
                 email: "",
                 password: "",
                 specialization:"",
@@ -105,9 +105,38 @@
             };
         },
             methods: {
-            handleRegister() {
-                // Logic untuk login
-                console.log("Login dengan:", this.username, this.password);
+            async handleRegister() {
+                const userData = {
+                    full_name: this.full_name,
+                    email: this.email,
+                    password: this.password,
+                    specialization:this.specialization,
+                    bio: this.bio
+                };
+                console.log(userData);
+                try{
+                    const response = await fetch('http://127.0.0.1:5000/api/psychologists/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    console.log(response);
+                    if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    if(data){
+                        console.log('Success:', data);
+                        this.$router.push('/dashboard');
+                    }
+                   
+
+                }catch(err){
+                    console.log(err);
+                }
             }
         }
     }
