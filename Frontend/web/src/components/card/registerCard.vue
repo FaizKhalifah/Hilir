@@ -26,7 +26,7 @@
                 <label>Tell us about your self : </label>
                 <textarea v-model="bio"></textarea>
             </div>
-            
+            <p>Already have an account? login <a href="/login">Here</a></p>
             <button type="submit">Register</button>
             </form>
             <img :src="require('@/assets/register.png')" alt="">
@@ -129,6 +129,7 @@
 
                     const data = await response.json();
                     if(data){
+                        localStorage.setItem('token', data.token);
                         console.log('Success:', data);
                         this.$router.push('/dashboard');
                     }

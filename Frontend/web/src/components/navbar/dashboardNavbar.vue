@@ -9,7 +9,7 @@
                         </form>
                         <button>Search</button>
                     </div>
-                    <a href="/logout">Logout</a>
+                    <a @click.prevent="logout">Logout</a>
                 </div>
             </li>
     </ul>
@@ -48,6 +48,7 @@
     .searchBar a{
         text-decoration: none;
         color: white;
+        cursor: pointer;
     }
 
     nav input[type=text]{
@@ -61,6 +62,12 @@
 </style>
 <script>
     export default{
-        name:"dashboardNavbarComponent"
+        name:"dashboardNavbarComponent",
+        methods:{
+          logout(){
+            localStorage.removeItem('token'); // Hapus token dari localStorage
+            this.$router.push({ name: 'login' }); // Arahkan ke halaman login
+        }
+        }
     }
 </script>
