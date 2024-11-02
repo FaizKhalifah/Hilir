@@ -1,5 +1,6 @@
 package com.example.mobilehilir.screen
 
+import ChildrenViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,10 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,19 +22,26 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.mobilehilir.data.AnakList
-import com.example.mobilehilir.data.listItems
-
-
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RuangHilir(items: List<AnakList>) {
+fun RuangHilir(
+    viewModel: ChildrenViewModel = viewModel(),
+    navController: NavHostController // Pass NavHostController
+) {
+    val items by viewModel.childrenList.observeAsState(emptyList())
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val backgroundColor = Color(0xFF3BA3FF)
+
+    LaunchedEffect(Unit) {
+        viewModel.getAllChildren()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -42,9 +54,10 @@ fun RuangHilir(items: List<AnakList>) {
                 title = {
                     Text(
                         text = "Ruang Hilir",
-                        fontSize = 20.sp,
+                        fontSize = 30.sp,
                         color = Color.White,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
@@ -57,7 +70,7 @@ fun RuangHilir(items: List<AnakList>) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* do something */ }) {
+                    IconButton(onClick = { /* Handle notification icon click */ }) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifikasi"
@@ -73,6 +86,7 @@ fun RuangHilir(items: List<AnakList>) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Header section with assessment reminder
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -122,24 +136,38 @@ fun RuangHilir(items: List<AnakList>) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            items.forEach { item ->
-                AnakListItem(
-                    item = item,
-                    onClick = {
-                        // Action when clicked
-                    }
+            // Display the list of children
+            if (items.isEmpty()) {
+                Text(
+                    text = "No children available.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center
                 )
+            } else {
+                items.forEach { item ->
+                    AnakListItem(
+                        item = item,
+                        onClick = { navController.navigate("childDetail/${item.id}") } // Navigate here
+                    )
+                }
             }
+
             Button(
                 onClick = {
-                    // Handle button click
+                    // Implement the logic for adding a new child
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = backgroundColor), // Change the button color here
+                colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(text = "Tambah Hilirians", fontWeight = FontWeight.Bold, color = Color.White) // Change text color if needed
+                Text(
+                    text = "Tambah Hilirians",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
         }
     }
@@ -150,8 +178,8 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .padding(10.dp)
-            .clickable { onClick() }
-            .border(1.dp, Color.Black, shape = RoundedCornerShape(12.dp)),
+            .border(1.dp, Color.Black, shape = RoundedCornerShape(12.dp))
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -176,7 +204,7 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    text = "${item.issue_name}, ${item.age} Tahun",
+                    text = "${item.age} Tahun",
                     style = TextStyle(
                         color = Color.Gray,
                         fontWeight = FontWeight.Normal,
@@ -185,12 +213,5 @@ fun AnakListItem(item: AnakList, onClick: () -> Unit) {
                 )
             }
         }
-
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RuangHilirPreview() {
-    RuangHilir(items = listItems)
 }

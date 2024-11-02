@@ -36,6 +36,7 @@ fun Register() {
     var nama by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val backgroundColor = Color(0xFF3BA3FF)
 
     Column(
         modifier = Modifier
@@ -48,7 +49,7 @@ fun Register() {
             text = "Daftar Akun",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Blue,
+            color = backgroundColor,
             modifier = Modifier.padding(bottom = 15.dp)
         )
 
@@ -99,7 +100,7 @@ fun Register() {
 
         Button(
             onClick = { /*TODO*/ },
-            colors = ButtonDefaults.buttonColors(Color.Blue),
+            colors = ButtonDefaults.buttonColors(backgroundColor),
             contentPadding = PaddingValues(15.dp),
             modifier = Modifier
                 .fillMaxWidth(),
