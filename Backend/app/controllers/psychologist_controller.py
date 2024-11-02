@@ -3,6 +3,7 @@
 from flask import Blueprint, request, jsonify
 from app.services.psychologist_service import PsychologistService
 from app.utils.jwt_utils import generate_psychologist_jwt_token, psychologist_required
+from datetime import datetime
 
 psychologist_bp = Blueprint("psychologist_bp", __name__)
 
@@ -176,3 +177,25 @@ def get_all_assessments():
         return jsonify({"error": error}), 400
 
     return jsonify(assessments), 200
+
+@psychologist_bp.route("/schedule", methods=["GET"])
+@psychologist_required
+def get_psychologist_schedule():
+    psychologist_id = request.psychologist_id  # Retrieved from JWT
+
+    # Fetch the requested date from query parameters
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            requested_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
+    else:
+        requested_date = datetime.now().date()  # Default to today if no date is provided
+
+    # Fetch the schedule for the psychologist for the requested date
+    schedule, error = PsychologistService.get_schedule_for_psychologist(psychologist_id, requested_date)
+    if error:
+        return jsonify({"error": error}), 404
+
+    return jsonify(schedule), 200

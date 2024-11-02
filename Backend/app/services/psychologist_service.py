@@ -186,3 +186,30 @@ class PsychologistService:
         ]
         
         return assessments_data, None
+    
+    @staticmethod
+    def get_schedule_for_psychologist(psychologist_id, requested_date):
+        """Get the schedule for a specific psychologist by their ID for a specific date."""
+        schedules = PsychologistRepository.get_schedule_for_psychologist(psychologist_id)
+        if not schedules:
+            return None, "No schedules found for this psychologist."
+
+        # Check if there are available slots for the requested date
+        available_slots = PsychologistRepository.get_available_slots_for_date(psychologist_id, requested_date)
+        is_available_on_date = len(available_slots) > 0
+
+        # Format the schedules for response
+        schedule_data = [
+            {
+                "start_time": str(schedule.start_time),
+                "end_time": str(schedule.end_time),
+                "is_available": schedule.is_available
+            } for schedule in schedules
+        ]
+
+        response = {
+            "schedule": schedule_data,
+            "available_on_date": is_available_on_date
+        }
+        
+        return response, None
