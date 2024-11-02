@@ -32,3 +32,6 @@ class ChildRepository:
     @staticmethod
     def get_exercises_by_mental_health_issues(mental_health_issue_ids):
         return Exercise.query.filter(Exercise.mental_health_issue_id.in_(mental_health_issue_ids)).all()
+    
+    def get_child_personalizations(child_id):
+        return ChildPersonalization.query.filter_by(child_id=child_id).all()
