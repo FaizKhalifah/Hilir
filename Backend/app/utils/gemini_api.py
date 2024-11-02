@@ -1,4 +1,3 @@
-# app/utils/gemini_api.py
 
 import requests
 from app.config import Config

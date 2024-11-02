@@ -1,7 +1,4 @@
-# app/services/chatbot_service.py
-
 class ChatbotService:
-
     @staticmethod
     def generate_chatbot_prompt(parent_message, mental_health_issues):
         issues_list = ", ".join([issue["name"] for issue in mental_health_issues])
