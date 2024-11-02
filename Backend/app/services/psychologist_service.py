@@ -8,6 +8,7 @@ from app.repositories.exercise_repository import ExerciseRepository
 from app.models.personalization_question import PersonalizationQuestion
 from app.models.question_mental_health import QuestionMentalHealth
 from app.models.psychologist import Psychologist
+from app.repositories.assessment_repository import AssessmentRepository
 class PsychologistService:
 
     @staticmethod
@@ -164,3 +165,24 @@ class PsychologistService:
             "bio": psychologist.bio,
             "today_schedule": schedule_data
         }, None
+    @staticmethod
+    def get_all_assessments(psychologist_id):
+        """Get all assessments associated with a specific psychologist."""
+        assessments = AssessmentRepository.get_all_assessments_for_psychologist(psychologist_id)
+        
+        if not assessments:
+            return None, "No assessments found for this psychologist."
+        
+        # Prepare a list of assessments for response
+        assessments_data = [
+            {
+                "id": assessment.id,
+                "child_id": assessment.child_id,
+                "task_description": assessment.task_description,
+                "due_date": str(assessment.due_date),
+                "frequency": assessment.frequency,
+                "is_completed": assessment.is_completed
+            } for assessment in assessments
+        ]
+        
+        return assessments_data, None
