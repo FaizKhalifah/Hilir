@@ -2,10 +2,9 @@
 
 from flask import Blueprint, request, jsonify
 from app.services.psychologist_service import PsychologistService
-from app.utils.jwt_utils import generate_psychologist_jwt_token, parent_required, psychologist_required
+from app.utils.jwt_utils import generate_psychologist_jwt_token, psychologist_required
 
 psychologist_bp = Blueprint("psychologist_bp", __name__)
-parent_bp = Blueprint("parent_bp", __name__)
 
 # Register psychologist
 @psychologist_bp.route("/register", methods=["POST"])
@@ -39,14 +38,7 @@ def login_psychologist():
     token = generate_psychologist_jwt_token(psychologist)
     return jsonify({"message": "Login successful", "token": token}), 200
 
-# Psychologist-specific route (for psychologists only)
-@psychologist_bp.route("/psychologist-only-data", methods=["GET"])
-@psychologist_required
-def get_psychologist_data():
-    return jsonify({"message": "This data is only for psychologists"})
-
 # Get all children for a psychologist with paid consultations
-# Get all children associated with a psychologist’s paid consultations
 @psychologist_bp.route("/all_children", methods=["GET"])
 @psychologist_required
 def get_all_children_for_psychologist():
@@ -56,15 +48,52 @@ def get_all_children_for_psychologist():
     children = PsychologistService.get_all_children_for_psychologist(psychologist_id)
     return jsonify(children), 200
 
-# Get details for a specific child for a psychologist with paid consultations
+# Get detailed mental health report for a specific child
 @psychologist_bp.route("/child/<int:child_id>/report", methods=["GET"])
 @psychologist_required
 def get_child_report_for_psychologist(child_id):
     psychologist_id = request.psychologist_id  # Retrieved from JWT
 
-    # Fetch child report
     report, error = PsychologistService.get_child_mental_health_report_for_psychologist(psychologist_id, child_id)
     if error:
         return jsonify({"error": error}), 403
 
     return jsonify(report), 200
+
+@psychologist_bp.route("/child/<int:child_id>/assign_exercise", methods=["POST"])
+@psychologist_required
+def add_and_assign_exercise_to_child(child_id):
+    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    data = request.json
+
+    required_fields = ["title", "mental_health_issue_id", "assigned_date"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Title, mental_health_issue_id, and assigned_date are required"}), 400
+
+    # Call the service to add and assign the exercise
+    child_exercise, error = PsychologistService.add_and_assign_exercise_to_child(psychologist_id, child_id, data)
+
+    if error:
+        return jsonify({"error": error}), 403
+
+    return jsonify({
+        "message": "Exercise assigned successfully",
+        "child_exercise": {
+            "child_id": child_exercise.child_id,
+            "exercise_id": child_exercise.exercise_id,
+            "assigned_date": str(child_exercise.assigned_date),
+            "is_completed": child_exercise.is_completed
+        }
+    }), 201
+
+# Route to retrieve all exercises for a psychologist's specialization
+@psychologist_bp.route("/exercises", methods=["GET"])
+@psychologist_required
+def get_exercises_for_specialization():
+    psychologist_id = request.psychologist_id  # Extract psychologist ID from JWT
+    exercises, error = PsychologistService.get_exercises_for_psychologist(psychologist_id)
+
+    if error:
+        return jsonify({"error": error}), 400
+
+    return jsonify(exercises), 200

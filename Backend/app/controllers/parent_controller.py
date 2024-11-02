@@ -226,3 +226,20 @@ def get_all_psychologists_for_parent(child_id):
         } for psychologist in psychologists
     ]
     return jsonify(psychologists_data), 200
+
+
+@parent_bp.route("/child/<int:child_id>/available_exercises", methods=["GET"])
+@parent_required
+def get_available_exercises_for_child(child_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Retrieve available exercises
+    exercises, error = ChildService.get_available_exercises_for_child(child_id)
+    if error:
+        return jsonify({"error": error}), 404
+
+    return jsonify(exercises), 200

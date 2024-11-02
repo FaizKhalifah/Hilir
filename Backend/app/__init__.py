@@ -8,7 +8,7 @@ from app.config import Config
 from app.utils.db import init_db
 from app.controllers.parent_controller import parent_bp
 from app.controllers.psychologist_controller import psychologist_bp
-from app.seed_cli import seed  # Import the CLI command from seed_cli.py
+from app.seed_cli import seed_exercises_command
 
 mail = Mail()
 
@@ -24,6 +24,6 @@ def create_app():
     app.register_blueprint(parent_bp, url_prefix="/api/parents")
     app.register_blueprint(psychologist_bp, url_prefix="/api/psychologists")
     # Register the CLI command
-    app.cli.add_command(seed)
+    app.cli.add_command(seed_exercises_command)
 
     return app
