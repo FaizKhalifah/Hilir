@@ -2,6 +2,9 @@ from flask import request, jsonify
 from app.services.psychologist_service import PsychologistService
 from app.utils.jwt_utils import generate_psychologist_jwt_token
 from datetime import datetime
+from app.utils.gemini_api import GeminiAPI
+from app.services.chatbot_service import ChatbotService
+from app.repositories.child_repository import ChildRepository
 
 def register_psychologist():
     data = request.json
@@ -153,3 +156,20 @@ def get_psychologist_schedule():
         return jsonify({"error": error}), 404
 
     return jsonify(schedule), 200
+def chat_with_child():
+    child_message = request.json.get("message")
+    if not child_message:
+        return jsonify({"error": "Message is required"}), 400
+
+    # Generate prompt with general mental health issues
+    prompt = ChatbotService.generate_chatbot_prompt_for_general_issues(child_message)
+    response_json, error = GeminiAPI.get_exercises_for_prompt(prompt)
+    if error:
+        return jsonify({"error": f"Failed to fetch response from Gemini API: {error}"}), 500
+
+    bot_response = response_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+    if not bot_response:
+        return jsonify({"error": "No valid response could be parsed from the chatbot."}), 500
+
+    return jsonify({"bot_response": bot_response}), 200
+
