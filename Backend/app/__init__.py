@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail
 from app.config import Config
+from flask_cors import CORS
 from app.utils.db import init_db
 from app.controllers.parent_controller import parent_bp
 from app.controllers.psychologist_controller import psychologist_bp
@@ -17,6 +18,9 @@ def create_app():
     app.config.from_object(Config)
     init_db(app)
 
+    #CORS set up
+    CORS(app)
+    
     # Initialize mail
     mail.init_app(app)
 
