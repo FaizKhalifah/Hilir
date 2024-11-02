@@ -4,6 +4,8 @@ from app.repositories.child_repository import ChildRepository
 
 from app.repositories.child_repository import ChildRepository
 from app.models.child import Child
+from app.models.consultation import Consultation
+from app.utils.db import db
 
 class ChildService:
     @staticmethod
@@ -52,3 +54,27 @@ class ChildService:
         """Check if the given child belongs to the specified parent."""
         child = Child.query.filter_by(id=child_id, parent_id=parent_id).first()
         return child is not None
+
+    @staticmethod
+    def get_children_for_psychologist(psychologist_id):
+        """Get a list of children who have had paid consultations with a specific psychologist."""
+        consultations = (
+            db.session.query(Child, Consultation)
+            .join(Consultation, Consultation.child_id == Child.id)
+            .filter(Consultation.psychologist_id == psychologist_id, Consultation.is_paid == True)
+            .all()
+        )
+        return consultations
+
+    @staticmethod
+    def get_child_detail_for_psychologist(child_id, psychologist_id):
+        """Get details of a specific child if there is a paid consultation with a psychologist."""
+        consultation = (
+            db.session.query(Child, Consultation)
+            .join(Consultation, Consultation.child_id == Child.id)
+            .filter(Consultation.child_id == child_id, 
+                    Consultation.psychologist_id == psychologist_id,
+                    Consultation.is_paid == True)
+            .first()
+        )
+        return consultation

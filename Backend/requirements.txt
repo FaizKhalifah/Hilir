@@ -4,3 +4,5 @@ SQLAlchemy
 python-dotenv
 supabase-py
 Flask-Mail
+JWT
+psycopg2

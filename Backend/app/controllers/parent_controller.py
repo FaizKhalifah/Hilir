@@ -9,6 +9,7 @@ from app.utils.jwt_utils import generate_parent_jwt_token, parent_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.services.child_service import ChildService
 from app.services.personalization_service import PersonalizationService
+from app.services.psychologist_service import PsychologistService
 from app.repositories.parent_repository import ParentRepository
 
 parent_bp = Blueprint("parent_bp", __name__)
@@ -204,3 +205,24 @@ def get_child_report(child_id):
         return jsonify({"error": error}), 404
     
     return jsonify(report), 200
+
+@parent_bp.route("/<int:child_id>/all_psychologists", methods=["GET"])
+@parent_required
+def get_all_psychologists_for_parent(child_id):
+    # Ensure that the parent has access to the child
+    parent_id = request.parent_id  # Retrieved from JWT token
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Fetch all psychologists that can be viewed by a parent
+    psychologists = PsychologistService.get_all_psychologists()
+    psychologists_data = [
+        {
+            "id": psychologist.id,
+            "full_name": psychologist.full_name,
+            "email": psychologist.email,
+            "specialization": psychologist.specialization,
+            "bio": psychologist.bio
+        } for psychologist in psychologists
+    ]
+    return jsonify(psychologists_data), 200
