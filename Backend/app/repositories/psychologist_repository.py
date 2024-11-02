@@ -79,3 +79,11 @@ class PsychologistRepository:
         db.session.commit()
 
         return child_exercise, None
+    @staticmethod
+    def get_paid_consultation_for_child(psychologist_id, child_id):
+        """Check if a paid consultation exists between the psychologist and the child."""
+        return Consultation.query.filter_by(
+            psychologist_id=psychologist_id,
+            child_id=child_id,
+            is_paid=True
+        ).first()
