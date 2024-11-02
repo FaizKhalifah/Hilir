@@ -2,11 +2,11 @@
 
 import click
 from flask.cli import with_appcontext
-from app.seeds import seed_questions
+from app.seeds import run_seeds
 
-@click.command("seed_questions")
+@click.command("seed_database")
 @with_appcontext
 def seed():
-    """Seed the database with questions and mental health issues."""
-    seed_questions()
-    print("Seeded questions and mental health issues successfully.")
+    """Seed the database with psychologists, schedules, and consultations."""
+    run_seeds()
+    print("Database seeded successfully.")
