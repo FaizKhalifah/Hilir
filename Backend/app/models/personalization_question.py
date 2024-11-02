@@ -5,4 +5,6 @@ class PersonalizationQuestion(BaseModel):
     __tablename__ = "personalization_questions"
     assessment_id = db.Column(db.Integer, db.ForeignKey("assessments.id"), nullable=False)
     question = db.Column(db.String, nullable=False)
-    question_mental_health = db.relationship("QuestionMentalHealth", backref="personalization_question", lazy=True)
+
+    # Link with QuestionMentalHealth using a better relationship
+    related_mental_health_issues = db.relationship("QuestionMentalHealth", back_populates="personalization_question", lazy=True)
