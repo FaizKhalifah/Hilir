@@ -43,11 +43,6 @@ class ParentRepository:
         if otp_record and not otp_record.is_expired():
             return True
         return False
-    
-    @staticmethod
-    def save_parent(parent):
-        db.session.add(parent)
-        db.session.commit()
 
     @staticmethod
     def get_all_parents():

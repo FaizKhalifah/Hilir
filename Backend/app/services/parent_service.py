@@ -3,18 +3,21 @@ from app.utils.email_utils import send_otp_email
 from app.models.parent import Parent
 from app.utils.db import db
 from app.repositories.personalization_question_repository import PersonalizationQuestionRepository
+from app.repositories.parent_repository import ParentRepository
 
 class ParentService:
     @staticmethod
     def register_parent(data):
         parent = Parent(
             username=data["username"],
-            email=data["email"],
-            is_verified=True  # Automatically set to verified
+            email=data["email"]
         )
         
         parent.set_password(data["password"])
         ParentRepository.save_parent(parent)
+        
+        otp_code = ParentRepository.generate_otp(parent.id)
+        send_otp_email(parent.email, otp_code)
         
         return parent
 
