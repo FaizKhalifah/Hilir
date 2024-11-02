@@ -1,0 +1,6 @@
+Flask
+Flask-Migrate
+SQLAlchemy
+python-dotenv
+supabase-py
+Flask-Mail
