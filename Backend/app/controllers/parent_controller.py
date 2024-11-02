@@ -243,3 +243,49 @@ def get_available_exercises_for_child(child_id):
         return jsonify({"error": error}), 404
 
     return jsonify(exercises), 200
+
+@parent_bp.route("/child/<int:child_id>/assessment/<int:assessment_id>/complete", methods=["POST"])
+@parent_required
+def complete_assessment(child_id, assessment_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Ensure the child belongs to the parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Complete the assessment and generate questions for the parent
+    assessment, questions, error = ChildService.complete_assessment_and_generate_questions(child_id, assessment_id)
+    if error:
+        return jsonify({"error": error}), 404
+
+    return jsonify({
+        "message": "Assessment marked as completed",
+        "assessment": {
+            "child_id": assessment.child_id,
+            "psychologist_id": assessment.psychologist_id,
+            "task_description": assessment.task_description,
+            "is_completed": assessment.is_completed
+        },
+        "evaluation_questions": questions
+    }), 200
+    
+@parent_bp.route("/child/<int:child_id>/submit_responses", methods=["POST"])
+@parent_required
+def submit_responses(child_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    data = request.json.get("responses", [])  # Expected: [{"question_id": int, "response_score": int}]
+    if not data:
+        return jsonify({"error": "Responses are required"}), 400
+
+    # Apply impacts for each response
+    for response in data:
+        question_id = response["question_id"]
+        response_score = response["response_score"]
+        ChildService.apply_response_impact(child_id, question_id, response_score)
+
+    return jsonify({"message": "Responses submitted and mental health scores updated"}), 200

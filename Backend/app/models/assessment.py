@@ -1,3 +1,4 @@
+# app/models/assessment.py
 from app.models.base import BaseModel
 from app.utils.db import db
 
@@ -12,3 +13,4 @@ class Assessment(BaseModel):
 
     child = db.relationship("Child", backref="assessments", lazy=True)
     psychologist = db.relationship("Psychologist", backref="assessments", lazy=True)
+    questions = db.relationship("PersonalizationQuestion", backref="assessment", lazy=True)

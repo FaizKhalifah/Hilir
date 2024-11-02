@@ -126,3 +126,41 @@ def add_assessment(child_id):
             "is_completed": assessment.is_completed
         }
     }), 201
+    
+@psychologist_bp.route("/child/<int:child_id>/add_assessment_with_questions", methods=["POST"])
+@psychologist_required
+def add_assessment_with_questions(child_id):
+    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    data = request.json
+
+    required_fields = ["task_description", "due_date", "frequency", "questions"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "task_description, due_date, frequency, and questions are required"}), 400
+
+    assessment_data = {
+        "task_description": data["task_description"],
+        "due_date": data["due_date"],
+        "frequency": data["frequency"]
+    }
+
+    # Questions array contains question text and its impact on mental health issues
+    questions = data["questions"]
+
+    assessment, error = PsychologistService.add_assessment_with_questions(
+        psychologist_id, child_id, assessment_data, questions
+    )
+
+    if error:
+        return jsonify({"error": error}), 403
+
+    return jsonify({
+        "message": "Assessment and questions added successfully",
+        "assessment": {
+            "child_id": assessment.child_id,
+            "psychologist_id": assessment.psychologist_id,
+            "task_description": assessment.task_description,
+            "due_date": str(assessment.due_date),
+            "frequency": assessment.frequency,
+            "is_completed": assessment.is_completed
+        }
+    }), 201

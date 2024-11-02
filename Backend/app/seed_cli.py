@@ -1,12 +1,14 @@
-# app/seed_cli.py
 
 import click
 from flask.cli import with_appcontext
-from app.seeds import seed_exercises  # Import only the exercises seeding function
+from app.seeds import seed_database
+from app.utils.db import db
 
-@click.command("seed_exercises")
+
+@click.command(name='seed')
 @with_appcontext
-def seed_exercises_command():
-    """Seed the database with exercises only."""
-    seed_exercises()
-    print("Exercise data seeded successfully.")
+def seed():
+    """Seed the database with initial data."""
+    db.drop_all()
+    db.create_all()
+    seed_database()

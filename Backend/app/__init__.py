@@ -9,7 +9,7 @@ from flask_cors import CORS
 from app.utils.db import init_db
 from app.controllers.parent_controller import parent_bp
 from app.controllers.psychologist_controller import psychologist_bp
-from app.seed_cli import seed_exercises_command
+from app.seed_cli import seed
 
 mail = Mail()
 
@@ -28,6 +28,6 @@ def create_app():
     app.register_blueprint(parent_bp, url_prefix="/api/parents")
     app.register_blueprint(psychologist_bp, url_prefix="/api/psychologists")
     # Register the CLI command
-    app.cli.add_command(seed_exercises_command)
+    app.cli.add_command(seed)
 
     return app
