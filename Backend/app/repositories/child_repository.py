@@ -3,6 +3,8 @@
 from app.models.child import Child
 from app.utils.db import db
 from app.models.child_personalization import ChildPersonalization
+from app.models.child_exercise import ChildExercise
+from app.models.exercise import Exercise
 
 class ChildRepository:
     @staticmethod
@@ -26,3 +28,7 @@ class ChildRepository:
         # Retrieve scores for each mental health issue linked to the child
         scores = ChildPersonalization.query.filter_by(child_id=child_id).all()
         return scores
+
+    @staticmethod
+    def get_exercises_by_mental_health_issues(mental_health_issue_ids):
+        return Exercise.query.filter(Exercise.mental_health_issue_id.in_(mental_health_issue_ids)).all()

@@ -6,7 +6,10 @@ from app.repositories.child_repository import ChildRepository
 from app.models.child import Child
 from app.models.consultation import Consultation
 from app.utils.db import db
-
+from app.models.child_personalization import ChildPersonalization
+from app.repositories.exercise_repository import ExerciseRepository
+from app.models.child_exercise import ChildExercise
+from app.models.mental_health_issue import MentalHealthIssue
 class ChildService:
     @staticmethod
     def create_child(parent_id, data):
@@ -78,3 +81,45 @@ class ChildService:
             .first()
         )
         return consultation
+    
+    @staticmethod
+    def get_available_exercises_for_child(child_id):
+        # Step 1: Fetch mental health issues with exceeded thresholds for this child
+        exceeded_issues = (
+            db.session.query(ChildPersonalization)
+            .join(MentalHealthIssue, ChildPersonalization.mental_health_issue_id == MentalHealthIssue.id)
+            .filter(
+                ChildPersonalization.child_id == child_id,
+                ChildPersonalization.personalization_score >= MentalHealthIssue.threshold_score
+            )
+            .all()
+        )
+
+        if not exceeded_issues:
+            return [], "No mental health issues exceeding thresholds found for this child"
+
+        # Get the list of mental health issue IDs that exceeded thresholds
+        exceeded_issue_ids = [issue.mental_health_issue_id for issue in exceeded_issues]
+
+        # Step 2: Retrieve all exercises for these mental health issues
+        exercises = ExerciseRepository.get_exercises_by_mental_health_issues(exceeded_issue_ids)
+
+        # Step 3: Filter out exercises already assigned to this child (unless it's assigned to this specific child)
+        assigned_exercise_ids = {
+            ex.exercise_id for ex in ChildExercise.query.filter(
+                ChildExercise.child_id != child_id,
+                ChildExercise.exercise_id.in_([exercise.id for exercise in exercises])
+            ).all()
+        }
+
+        # Filter exercises based on assignment exclusion
+        available_exercises = [
+            {
+                "id": exercise.id,
+                "title": exercise.title,
+                "description": exercise.description
+            }
+            for exercise in exercises if exercise.id not in assigned_exercise_ids
+        ]
+
+        return available_exercises, None

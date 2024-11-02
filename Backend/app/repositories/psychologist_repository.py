@@ -4,7 +4,9 @@ from app.utils.db import db
 from app.models.psychologist import Psychologist
 from app.models.child import Child
 from app.models.consultation import Consultation
-
+from app.models.child_exercise import ChildExercise
+from app.models.exercise import Exercise
+from datetime import datetime
 
 class PsychologistRepository:
 
@@ -30,34 +32,50 @@ class PsychologistRepository:
         return Psychologist.query.all()
 
     @staticmethod
-    def get_psychologist_by_id(psychologist_id):
-        return Psychologist.query.filter_by(id=psychologist_id).first()
-    
+    def get_specialization_id(psychologist_id):
+        """Map psychologist specialization to mental health issue ID."""
+        psychologist = Psychologist.query.get(psychologist_id)
+        if not psychologist:
+            return None
+        specialization_map = {
+            "ADHD": 1,
+            "Autism": 2,
+            "Anxiety": 3
+        }
+        return specialization_map.get(psychologist.specialization)
 
     @staticmethod
-    def get_child_ids_with_paid_consultations(psychologist_id):
-        """Fetch child IDs that have paid consultations with the specified psychologist."""
-        consultations = db.session.query(Consultation.child_id).filter_by(
-            psychologist_id=psychologist_id,
-            is_paid=True
-        ).distinct().all()
+    def get_exercises_for_specialization(mental_health_issue_id):
+        """Retrieve exercises based on a specific mental health issue ID."""
+        return Exercise.query.filter_by(mental_health_issue_id=mental_health_issue_id).all()
+
+    @staticmethod
+    def add_and_assign_exercise_to_child(child_id, exercise_data, psychologist_id):
+        # Ensure the psychologist has a paid consultation with the child
+        consultation = db.session.query(Consultation).filter_by(
+            psychologist_id=psychologist_id, child_id=child_id, is_paid=True
+        ).first()
         
-        return [consultation.child_id for consultation in consultations]
+        if not consultation:
+            return None, "Access denied: No paid consultation for this child."
 
-    @staticmethod
-    def get_child_detail_for_psychologist(psychologist_id, child_id):
-        """Fetch specific child details if associated with a paid consultation for the psychologist."""
-        child = db.session.query(Child).join(Consultation).filter(
-            Consultation.psychologist_id == psychologist_id,
-            Consultation.child_id == child_id,
-            Consultation.is_paid == True
-        ).first()
-        return child
-    @staticmethod
-    def get_paid_consultation_for_child(psychologist_id, child_id):
-        """Check if there is a paid consultation between the psychologist and the child."""
-        return db.session.query(Consultation).filter_by(
-            psychologist_id=psychologist_id,
+        # Create a new exercise
+        new_exercise = Exercise(
+            title=exercise_data["title"],
+            description=exercise_data.get("description"),
+            mental_health_issue_id=exercise_data["mental_health_issue_id"]
+        )
+        db.session.add(new_exercise)
+        db.session.flush()  # Get the exercise ID immediately after insertion
+
+        # Assign the new exercise to the child
+        child_exercise = ChildExercise(
             child_id=child_id,
-            is_paid=True
-        ).first()
+            exercise_id=new_exercise.id,
+            assigned_date=exercise_data["assigned_date"],
+            is_completed=False
+        )
+        db.session.add(child_exercise)
+        db.session.commit()
+
+        return child_exercise, None
