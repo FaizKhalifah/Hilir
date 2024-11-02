@@ -3,6 +3,7 @@
 from app.repositories.child_repository import ChildRepository
 
 from app.repositories.child_repository import ChildRepository
+from app.models.child import Child
 
 class ChildService:
     @staticmethod
@@ -46,3 +47,8 @@ class ChildService:
             })
 
         return report, None
+    
+    def is_child_owned_by_parent(child_id, parent_id):
+        """Check if the given child belongs to the specified parent."""
+        child = Child.query.filter_by(id=child_id, parent_id=parent_id).first()
+        return child is not None

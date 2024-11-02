@@ -1,25 +1,35 @@
+# app/controllers/parent_controller.py
+
 from flask import Blueprint, request, jsonify
 from app.services.parent_service import ParentService
 from app.models.parent import Parent
 from app.utils.db import db
-from app.utils.jwt_utils import generate_jwt_token, jwt_required
+from app.utils.email_utils import send_otp_email
+from app.utils.jwt_utils import generate_parent_jwt_token, parent_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.services.child_service import ChildService
 from app.services.personalization_service import PersonalizationService
+from app.repositories.parent_repository import ParentRepository
 
 parent_bp = Blueprint("parent_bp", __name__)
 
-# Register parent
 @parent_bp.route("/register", methods=["POST"])
 def register():
     data = request.json
-    required_fields = ["email", "password", "phone_number", "age", "gender"]
+    required_fields = ["username", "email", "password"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "All fields are required"}), 400
 
-    data["password"] = generate_password_hash(data["password"])
+    # Create the parent account and handle OTP generation within the service
     parent = ParentService.register_parent(data)
-    return jsonify({"id": parent.id, "email": parent.email, "message": "Registration successful! Check your email for OTP."}), 201
+
+    return jsonify({
+        "id": parent.id,
+        "username": parent.username,
+        "email": parent.email,
+        "message": "Registration successful! Check your email for OTP."
+    }), 201
+
 
 # Confirm OTP
 @parent_bp.route("/confirm_otp", methods=["POST"])
@@ -42,7 +52,6 @@ def confirm_otp():
     db.session.commit()
     return jsonify({"message": "OTP confirmed. Account verified."}), 200
 
-# Login
 @parent_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -50,19 +59,20 @@ def login():
     password = data.get("password")
     
     parent = Parent.query.filter_by(email=email).first()
-    if not parent or not check_password_hash(parent.password, password):
+    if not parent or not parent.check_password(password):
         return jsonify({"error": "Invalid credentials"}), 401
     if not parent.is_verified:
         return jsonify({"error": "Account not verified"}), 401
 
-    token = generate_jwt_token(parent)
+    token = generate_parent_jwt_token(parent)
     return jsonify({"message": "Login successful", "token": token}), 200
+
 
 # Get all parents
 @parent_bp.route("/all_parents", methods=["GET"])
 def get_all_parents():
     parents = Parent.query.all()
-    return jsonify([{"id": p.id, "email": p.email, "phone_number": p.phone_number} for p in parents]), 200
+    return jsonify([{"id": p.id, "email": p.email, "username": p.username} for p in parents]), 200
 
 # Resend OTP
 @parent_bp.route("/resend_otp", methods=["POST"])
@@ -79,14 +89,16 @@ def resend_otp():
         return jsonify({"error": message}), 404
 
     return jsonify({"message": message}), 200
+
+# Child-related routes
 @parent_bp.route("/create_child", methods=["POST"])
-@jwt_required
+@parent_required
 def create_child():
     data = request.json
     
     child_data = {
         "name": data.get("name"),
-        "age": data.get("age"),
+        "date_of_birth": data.get("date_of_birth"),
         "gender": data.get("gender")
     }
 
@@ -94,45 +106,70 @@ def create_child():
     parent_id = request.parent_id
 
     if not all(child_data.values()):
-        return jsonify({"error": "Name, age, and gender are required"}), 400
+        return jsonify({"error": "Name, date_of_birth, and gender are required"}), 400
 
     child = ChildService.create_child(parent_id, child_data)
     return jsonify({
         "message": "Child created successfully",
         "child_id": child.id,
-        "name": child.name
+        "name": child.name,
+        "gender": child.gender,
+        "date_of_birth": str(child.date_of_birth),
+        "age": child.age
     }), 201
 
-@parent_bp.route("/get_all_children", methods=["GET"])
-@jwt_required
-def get_all_children():
-    parent_id = request.parent_id
-    children = ChildService.get_all_children(parent_id)
-
-    # Format the response
-    children_data = [{"id": child.id, "name": child.name, "age": child.age, "gender": child.gender} for child in children]
-    return jsonify(children_data), 200
 
 @parent_bp.route("/get_child_detail/<int:child_id>", methods=["GET"])
-@jwt_required
+@parent_required
 def get_child_detail(child_id):
-    parent_id = request.parent_id
-    child = ChildService.get_child_detail(parent_id, child_id)
+    parent_id = request.parent_id  # Retrieved from JWT
 
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Fetch the child details
+    child = ChildService.get_child_detail(parent_id, child_id)
     if not child:
-        return jsonify({"error": "Child not found or does not belong to this parent"}), 404
+        return jsonify({"error": "Child not found"}), 404
 
     child_data = {
         "id": child.id,
         "name": child.name,
+        "date_of_birth": str(child.date_of_birth),
         "age": child.age,
         "gender": child.gender
     }
     return jsonify(child_data), 200
 
+
+@parent_bp.route("/get_all_children", methods=["GET"])
+@parent_required
+def get_all_children():
+    parent_id = request.parent_id  # Retrieved from JWT
+    children = ChildService.get_all_children(parent_id)
+
+    children_data = [
+        {
+            "id": child.id,
+            "name": child.name,
+            "date_of_birth": str(child.date_of_birth),
+            "age": child.age,
+            "gender": child.gender
+        } for child in children if child.parent_id == parent_id
+    ]
+    return jsonify(children_data), 200
+
+
 @parent_bp.route("/answer_questions/<int:child_id>", methods=["POST"])
-@jwt_required
+@parent_required
 def answer_questions(child_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
     data = request.json
     answers = data.get("answers")  # Expected to be a list of {"question_id": int, "response_score": int}
     
@@ -150,10 +187,16 @@ def answer_questions(child_id):
         "message": "Answers recorded and scores calculated",
         "issues_above_threshold": issues_above_threshold
     }), 200
-    
+
 @parent_bp.route("/get_child_report/<int:child_id>", methods=["GET"])
-@jwt_required
+@parent_required
 def get_child_report(child_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
     # Fetch the report from the service
     report, error = ChildService.get_child_mental_health_report(child_id)
     

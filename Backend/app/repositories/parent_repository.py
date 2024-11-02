@@ -7,11 +7,10 @@ from app.models.parent import Parent
 class ParentRepository:
 
     @staticmethod
-    def create_parent(data):
-        parent = Parent(**data)
+    def save_parent(parent):
+        """Save a parent instance to the database."""
         db.session.add(parent)
         db.session.commit()
-        return parent
 
     @staticmethod
     def generate_otp(parent_id):
@@ -42,3 +41,10 @@ class ParentRepository:
 
         db.session.commit()
         return existing_otp.otp_code
+
+    @staticmethod
+    def verify_otp(parent_id, otp_code):
+        otp_record = OTPVerification.query.filter_by(parent_id=parent_id, otp_code=otp_code).first()
+        if otp_record and not otp_record.is_expired():
+            return True
+        return False
