@@ -32,6 +32,6 @@ export default {
 }
 .card-header {
   font-weight: bold;
-  margin-bottom: 8px;
+  font-size: 24px;
 }
 </style>

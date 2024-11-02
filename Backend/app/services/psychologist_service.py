@@ -97,3 +97,41 @@ class PsychologistService:
         db.session.commit()
 
         return assessment, None
+    
+    @staticmethod
+    def add_assessment_with_questions(psychologist_id, child_id, assessment_data, questions):
+        consultation = PsychologistRepository.get_paid_consultation_for_child(psychologist_id, child_id)
+        if not consultation:
+            return None, "Access denied: No paid consultation for this child."
+
+        # Create the assessment
+        assessment = Assessment(
+            child_id=child_id,
+            psychologist_id=psychologist_id,
+            task_description=assessment_data["task_description"],
+            due_date=assessment_data["due_date"],
+            frequency=assessment_data["frequency"],
+            is_completed=False
+        )
+        db.session.add(assessment)
+        db.session.flush()
+
+        # Add each question and associate with mental health impacts
+        for question_data in questions:
+            question = PersonalizationQuestion(
+                assessment_id=assessment.id,
+                question=question_data["question"]
+            )
+            db.session.add(question)
+            db.session.flush()
+
+            for impact in question_data["impacts"]:
+                question_impact = QuestionMentalHealth(
+                    question_id=question.id,
+                    mental_health_issue_id=impact["mental_health_issue_id"],
+                    score_impact=impact["score_impact"]
+                )
+                db.session.add(question_impact)
+
+        db.session.commit()
+        return assessment, None

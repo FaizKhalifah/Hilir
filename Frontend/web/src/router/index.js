@@ -1,23 +1,36 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import login from '@/views/auth/login.vue'
-
+import overview from '@/views/dashboard/overview.vue'
+import authroutes from './authroutes.js'
+import dashboardRoutes from './dashboardRoutes.js'
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: overview,
+    meta: { requiresAuth: true}
   },
-  {
-    path: '/login',
-    name: 'login',
-    component: login
-  }
+  ...authroutes,
+  ...dashboardRoutes,
+
 ]
 
 const router = createRouter({
   history: createWebHistory(), // Menggunakan Web History tanpa hash
   routes
 })
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token');
+  console.log('Navigating to:', to.name, 'Token:', token);
+
+
+  // Memeriksa apakah rute memerlukan autentikasi
+  if (to.meta.requiresAuth && !token) {
+    next({ name: 'login' }); 
+  } else {
+    next(); 
+  }
+});
+
 
 export default router

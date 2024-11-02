@@ -10,6 +10,9 @@ from app.models.child_personalization import ChildPersonalization
 from app.repositories.exercise_repository import ExerciseRepository
 from app.models.child_exercise import ChildExercise
 from app.models.mental_health_issue import MentalHealthIssue
+from app.models.assessment import Assessment
+from app.repositories.question_repository import QuestionRepository
+
 class ChildService:
     @staticmethod
     def create_child(parent_id, data):
@@ -123,3 +126,39 @@ class ChildService:
         ]
 
         return available_exercises, None
+    
+    @staticmethod
+    def complete_assessment_and_generate_questions(child_id, assessment_id):
+        # Find the assessment and validate ownership and status
+        assessment = Assessment.query.filter_by(id=assessment_id, child_id=child_id, is_completed=False).first()
+        if not assessment:
+            return None, None, "Assessment not found or already completed."
+
+        # Mark assessment as completed
+        assessment.is_completed = True
+        db.session.commit()
+
+        # Generate questions for the parent based on child’s mental health issues
+        questions = QuestionRepository.get_questions_for_mental_health_issues(child_id)
+
+        # Format questions for the response
+        formatted_questions = [
+            {"question_id": q.id, "question": q.question, "mental_health_issue_id": q.mental_health_issue_id}
+            for q in questions
+        ]
+
+        return assessment, formatted_questions, None
+
+    @staticmethod
+    def apply_response_impact(child_id, question_id, response_score):
+        """Apply score impacts to mental health issues based on response."""
+        impacts = QuestionRepository.get_score_impacts(question_id)
+        
+        for impact in impacts:
+            personalization = ChildPersonalization.query.filter_by(
+                child_id=child_id,
+                mental_health_issue_id=impact.mental_health_issue_id
+            ).first()
+            if personalization:
+                personalization.personalization_score += impact.score_impact * response_score
+                db.session.commit()
