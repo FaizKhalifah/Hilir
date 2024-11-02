@@ -1,5 +1,3 @@
-# app/services/parent_service.py
-
 from app.repositories.parent_repository import ParentRepository
 from app.utils.email_utils import send_otp_email
 from app.models.parent import Parent
@@ -7,22 +5,16 @@ from app.utils.db import db
 import app.models.assessment as Assessment
 
 class ParentService:
-
     @staticmethod
     def register_parent(data):
-        # Create a new Parent instance
         parent = Parent(
             username=data["username"],
             email=data["email"]
         )
         
-        # Hash the password before saving
         parent.set_password(data["password"])
-
-        # Save the parent to the database
         ParentRepository.save_parent(parent)
         
-        # Generate OTP and send it as part of the registration process
         otp_code = ParentRepository.generate_otp(parent.id)
         send_otp_email(parent.email, otp_code)
         
@@ -42,7 +34,6 @@ class ParentService:
         if parent.is_verified:
             return None, "Account already verified. No need to resend OTP."
 
-        # Generate a new OTP and send an email
         otp_code = ParentRepository.resend_otp(parent.id)
         send_otp_email(parent.email, otp_code)
 

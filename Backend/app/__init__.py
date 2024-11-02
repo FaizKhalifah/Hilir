@@ -1,4 +1,4 @@
-# app/__init__.py
+
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -18,16 +18,14 @@ def create_app():
     app.config.from_object(Config)
     init_db(app)
 
-    #CORS set up
+
     CORS(app)
     
-    # Initialize mail
+
     mail.init_app(app)
 
-    # Register blueprints
     app.register_blueprint(parent_bp, url_prefix="/api/parents")
     app.register_blueprint(psychologist_bp, url_prefix="/api/psychologists")
-    # Register the CLI command
     app.cli.add_command(seed)
 
     return app

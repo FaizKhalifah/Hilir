@@ -5,10 +5,8 @@ from app.utils.db import db
 from app.models.parent import Parent
 
 class ParentRepository:
-
     @staticmethod
     def save_parent(parent):
-        """Save a parent instance to the database."""
         db.session.add(parent)
         db.session.commit()
 
@@ -23,15 +21,12 @@ class ParentRepository:
 
     @staticmethod
     def resend_otp(parent_id):
-        # Check if an OTP already exists and update it
         existing_otp = OTPVerification.query.filter_by(parent_id=parent_id).first()
 
         if existing_otp:
-            # Update the OTP code and expiration date
             existing_otp.otp_code = str(random.randint(100000, 999999))
             existing_otp.expiration_date = datetime.utcnow() + timedelta(minutes=5)
         else:
-            # Create a new OTP record if none exists
             existing_otp = OTPVerification(
                 parent_id=parent_id,
                 otp_code=str(random.randint(100000, 999999)),

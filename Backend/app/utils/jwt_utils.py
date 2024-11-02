@@ -1,5 +1,3 @@
-# app/utils/jwt_utils.py
-
 import jwt
 from datetime import datetime, timedelta
 from flask import current_app, request, jsonify
@@ -9,8 +7,8 @@ def generate_parent_jwt_token(parent):
     payload = {
         "id": parent.id,
         "email": parent.email,
-        "role": "parent",  # Include role as "parent"
-        "exp": datetime.utcnow() + timedelta(days=1)  # Token expires in 1 day
+        "role": "parent",  
+        "exp": datetime.utcnow() + timedelta(days=1) 
     }
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
     return token
@@ -19,8 +17,8 @@ def generate_psychologist_jwt_token(psychologist):
     payload = {
         "id": psychologist.id,
         "email": psychologist.email,
-        "role": "psychologist",  # Include role as "psychologist"
-        "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+        "role": "psychologist", 
+        "exp": datetime.utcnow() + timedelta(hours=1) 
     }
     return jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
 
@@ -29,11 +27,10 @@ def decode_jwt_token(token):
         decoded_payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
         return decoded_payload
     except jwt.ExpiredSignatureError:
-        return None  # Token has expired
+        return None  
     except jwt.InvalidTokenError:
-        return None  # Token is invalid
+        return None 
 
-# General JWT required decorator
 def jwt_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -53,7 +50,6 @@ def jwt_required(f):
     
     return decorated_function
 
-# Parent-only decorator
 def parent_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -71,7 +67,6 @@ def parent_required(f):
     
     return decorated_function
 
-# Psychologist-only decorator
 def psychologist_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):

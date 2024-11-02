@@ -1,5 +1,3 @@
-# app/controllers/psychologist_controller.py
-
 from flask import Blueprint, request, jsonify
 from app.services.psychologist_service import PsychologistService
 from app.utils.jwt_utils import generate_psychologist_jwt_token, psychologist_required
@@ -7,7 +5,6 @@ from datetime import datetime
 
 psychologist_bp = Blueprint("psychologist_bp", __name__)
 
-# Register psychologist
 @psychologist_bp.route("/register", methods=["POST"])
 def register_psychologist():
     data = request.json
@@ -24,7 +21,6 @@ def register_psychologist():
         "message": "Registration successful!"
     }), 201
 
-# Login psychologist
 @psychologist_bp.route("/login", methods=["POST"])
 def login_psychologist():
     data = request.json
@@ -35,26 +31,20 @@ def login_psychologist():
     if not psychologist:
         return jsonify({"error": "Invalid credentials"}), 401
 
-    # Generate JWT for psychologist
     token = generate_psychologist_jwt_token(psychologist)
     return jsonify({"message": "Login successful", "token": token}), 200
 
-# Get all children for a psychologist with paid consultations
 @psychologist_bp.route("/all_children", methods=["GET"])
 @psychologist_required
 def get_all_children_for_psychologist():
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
-
-    # Fetch all children associated with the psychologist
+    psychologist_id = request.psychologist_id
     children = PsychologistService.get_all_children_for_psychologist(psychologist_id)
     return jsonify(children), 200
 
-# Get detailed mental health report for a specific child
 @psychologist_bp.route("/child/<int:child_id>/report", methods=["GET"])
 @psychologist_required
 def get_child_report_for_psychologist(child_id):
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
-
+    psychologist_id = request.psychologist_id
     report, error = PsychologistService.get_child_mental_health_report_for_psychologist(psychologist_id, child_id)
     if error:
         return jsonify({"error": error}), 403
@@ -64,16 +54,14 @@ def get_child_report_for_psychologist(child_id):
 @psychologist_bp.route("/child/<int:child_id>/assign_exercise", methods=["POST"])
 @psychologist_required
 def add_and_assign_exercise_to_child(child_id):
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    psychologist_id = request.psychologist_id
     data = request.json
 
     required_fields = ["title", "mental_health_issue_id", "assigned_date"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Title, mental_health_issue_id, and assigned_date are required"}), 400
 
-    # Call the service to add and assign the exercise
     child_exercise, error = PsychologistService.add_and_assign_exercise_to_child(psychologist_id, child_id, data)
-
     if error:
         return jsonify({"error": error}), 403
 
@@ -87,31 +75,25 @@ def add_and_assign_exercise_to_child(child_id):
         }
     }), 201
 
-# Route to retrieve all exercises for a psychologist's specialization
 @psychologist_bp.route("/exercises", methods=["GET"])
 @psychologist_required
 def get_exercises_for_specialization():
-    psychologist_id = request.psychologist_id  # Extract psychologist ID from JWT
+    psychologist_id = request.psychologist_id
     exercises, error = PsychologistService.get_exercises_for_psychologist(psychologist_id)
-
     if error:
         return jsonify({"error": error}), 400
 
     return jsonify(exercises), 200
 
-# Route to add an assessment for a specific child
 @psychologist_bp.route("/child/<int:child_id>/add_assessment", methods=["POST"])
 @psychologist_required
 def add_assessment(child_id):
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    psychologist_id = request.psychologist_id
     data = request.json
-
-    # Required fields for an assessment
     required_fields = ["task_description", "due_date", "frequency"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "task_description, due_date, and frequency are required"}), 400
 
-    # Create assessment through service
     assessment, error = PsychologistService.add_assessment(psychologist_id, child_id, data)
     if error:
         return jsonify({"error": error}), 403
@@ -127,13 +109,12 @@ def add_assessment(child_id):
             "is_completed": assessment.is_completed
         }
     }), 201
-    
+
 @psychologist_bp.route("/child/<int:child_id>/add_assessment_with_questions", methods=["POST"])
 @psychologist_required
 def add_assessment_with_questions(child_id):
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    psychologist_id = request.psychologist_id
     data = request.json
-
     required_fields = ["task_description", "due_date", "frequency", "questions"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "task_description, due_date, frequency, and questions are required"}), 400
@@ -144,9 +125,7 @@ def add_assessment_with_questions(child_id):
         "frequency": data["frequency"]
     }
 
-    # Questions array contains question text and its impact on mental health issues
     questions = data["questions"]
-
     assessment, error = PsychologistService.add_assessment_with_questions(
         psychologist_id, child_id, assessment_data, questions
     )
@@ -165,14 +144,12 @@ def add_assessment_with_questions(child_id):
             "is_completed": assessment.is_completed
         }
     }), 201
-    
-# Route to get all assessments for a psychologist
+
 @psychologist_bp.route("/all_assessments", methods=["GET"])
 @psychologist_required
 def get_all_assessments():
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    psychologist_id = request.psychologist_id
     assessments, error = PsychologistService.get_all_assessments(psychologist_id)
-
     if error:
         return jsonify({"error": error}), 400
 
@@ -181,9 +158,7 @@ def get_all_assessments():
 @psychologist_bp.route("/schedule", methods=["GET"])
 @psychologist_required
 def get_psychologist_schedule():
-    psychologist_id = request.psychologist_id  # Retrieved from JWT
-
-    # Fetch the requested date from query parameters
+    psychologist_id = request.psychologist_id
     date_str = request.args.get('date')
     if date_str:
         try:
@@ -191,9 +166,8 @@ def get_psychologist_schedule():
         except ValueError:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
     else:
-        requested_date = datetime.now().date()  # Default to today if no date is provided
+        requested_date = datetime.now().date()
 
-    # Fetch the schedule for the psychologist for the requested date
     schedule, error = PsychologistService.get_schedule_for_psychologist(psychologist_id, requested_date)
     if error:
         return jsonify({"error": error}), 404
