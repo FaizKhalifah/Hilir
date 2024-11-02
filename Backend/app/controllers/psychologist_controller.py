@@ -97,3 +97,32 @@ def get_exercises_for_specialization():
         return jsonify({"error": error}), 400
 
     return jsonify(exercises), 200
+
+# Route to add an assessment for a specific child
+@psychologist_bp.route("/child/<int:child_id>/add_assessment", methods=["POST"])
+@psychologist_required
+def add_assessment(child_id):
+    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    data = request.json
+
+    # Required fields for an assessment
+    required_fields = ["task_description", "due_date", "frequency"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "task_description, due_date, and frequency are required"}), 400
+
+    # Create assessment through service
+    assessment, error = PsychologistService.add_assessment(psychologist_id, child_id, data)
+    if error:
+        return jsonify({"error": error}), 403
+
+    return jsonify({
+        "message": "Assessment added successfully",
+        "assessment": {
+            "child_id": assessment.child_id,
+            "psychologist_id": assessment.psychologist_id,
+            "task_description": assessment.task_description,
+            "due_date": str(assessment.due_date),
+            "frequency": assessment.frequency,
+            "is_completed": assessment.is_completed
+        }
+    }), 201

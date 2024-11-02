@@ -2,6 +2,8 @@
 
 from app.repositories.psychologist_repository import PsychologistRepository
 from app.repositories.child_repository import ChildRepository
+from app.models.assessment import Assessment
+from app.utils.db import db
 from app.repositories.exercise_repository import ExerciseRepository
 
 class PsychologistService:
@@ -73,3 +75,23 @@ class PsychologistService:
         
         exercises = PsychologistRepository.get_exercises_for_specialization(specialization_id)
         return [{"id": exercise.id, "title": exercise.title, "description": exercise.description} for exercise in exercises], None
+    @staticmethod
+    def add_assessment(psychologist_id, child_id, assessment_data):
+        # Check if a paid consultation exists between the psychologist and child
+        consultation = PsychologistRepository.get_paid_consultation_for_child(psychologist_id, child_id)
+        if not consultation:
+            return None, "Access denied: No paid consultation for this child."
+
+        # Create and save new assessment
+        assessment = Assessment(
+            child_id=child_id,
+            psychologist_id=psychologist_id,
+            task_description=assessment_data["task_description"],
+            due_date=assessment_data["due_date"],
+            frequency=assessment_data["frequency"],  # Frequency in hours
+            is_completed=False
+        )
+        db.session.add(assessment)
+        db.session.commit()
+
+        return assessment, None
