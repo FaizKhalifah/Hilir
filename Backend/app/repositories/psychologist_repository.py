@@ -7,6 +7,8 @@ from app.models.consultation import Consultation
 from app.models.child_exercise import ChildExercise
 from app.models.exercise import Exercise
 from datetime import datetime
+from app.models.psychologist_schedule import PsychologistSchedule
+from datetime import date
 
 class PsychologistRepository:
 
@@ -94,3 +96,16 @@ class PsychologistRepository:
         """Retrieve all child IDs that have a paid consultation with a specific psychologist."""
         consultations = Consultation.query.filter_by(psychologist_id=psychologist_id, is_paid=True).all()
         return [consultation.child_id for consultation in consultations]
+    @staticmethod
+    def get_psychologist_by_id(psychologist_id):
+        """Retrieve a psychologist by their ID."""
+        return Psychologist.query.get(psychologist_id)
+
+    @staticmethod
+    def get_schedule_for_today(psychologist_id):
+        """Retrieve the schedule of a psychologist for today."""
+        # Since we're assuming the same schedule applies every day, we just return all slots marked as available.
+        return PsychologistSchedule.query.filter_by(
+            psychologist_id=psychologist_id,
+            is_available=True
+        ).all()

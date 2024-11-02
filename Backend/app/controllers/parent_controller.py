@@ -10,7 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.services.child_service import ChildService
 from app.services.personalization_service import PersonalizationService
 from app.services.psychologist_service import PsychologistService
-from app.repositories.parent_repository import ParentRepository
+from app.services.consultation_service import ConsultationService
 
 parent_bp = Blueprint("parent_bp", __name__)
 
@@ -289,3 +289,57 @@ def submit_responses(child_id):
         ChildService.apply_response_impact(child_id, question_id, response_score)
 
     return jsonify({"message": "Responses submitted and mental health scores updated"}), 200
+
+@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>", methods=["GET"])
+@parent_required
+def get_psychologist_detail(child_id, psychologist_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Fetch the psychologist details, including the schedule
+    psychologist_data, error = PsychologistService.get_psychologist_details(psychologist_id)
+    if error:
+        return jsonify({"error": error}), 404
+
+    return jsonify(psychologist_data), 200
+
+@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>/book_consultation", methods=["POST"])
+@parent_required
+def book_consultation(child_id, psychologist_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Check if the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    data = request.json
+    consultation_date = data.get("consultation_date")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+
+    # Validate required fields
+    if not all([consultation_date, start_time, end_time]):
+        return jsonify({"error": "Consultation date, start time, and end time are required"}), 400
+
+    # Book consultation through the service
+    consultation, error = ConsultationService.book_consultation(
+        child_id=child_id,
+        psychologist_id=psychologist_id,
+        consultation_date=consultation_date,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    if error:
+        return jsonify({"error": error}), 400
+
+    return jsonify({
+        "message": "Consultation booked successfully",
+        "consultation_id": consultation.id,
+        "consultation_date": str(consultation.consultation_date),
+        "start_time": str(consultation.start_time),
+        "end_time": str(consultation.end_time)
+    }), 201

@@ -7,7 +7,7 @@ from app.utils.db import db
 from app.repositories.exercise_repository import ExerciseRepository
 from app.models.personalization_question import PersonalizationQuestion
 from app.models.question_mental_health import QuestionMentalHealth
-
+from app.models.psychologist import Psychologist
 class PsychologistService:
 
     @staticmethod
@@ -135,3 +135,32 @@ class PsychologistService:
 
         db.session.commit()
         return assessment, None
+    @staticmethod
+    def get_all_psychologists():
+        return Psychologist.query.all()
+    
+    @staticmethod
+    def get_psychologist_details(psychologist_id):
+        """Get the details of a specific psychologist by their ID."""
+        psychologist = PsychologistRepository.get_psychologist_by_id(psychologist_id)
+        if not psychologist:
+            return None, "Psychologist not found"
+
+        # Get today's schedule for the psychologist
+        schedules = PsychologistRepository.get_schedule_for_today(psychologist_id)
+        schedule_data = [
+            {
+                "start_time": str(schedule.start_time),
+                "end_time": str(schedule.end_time),
+                "is_available": schedule.is_available
+            } for schedule in schedules
+        ]
+
+        return {
+            "id": psychologist.id,
+            "full_name": psychologist.full_name,
+            "email": psychologist.email,
+            "specialization": psychologist.specialization,
+            "bio": psychologist.bio,
+            "today_schedule": schedule_data
+        }, None
