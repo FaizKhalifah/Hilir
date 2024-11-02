@@ -125,8 +125,12 @@ class ChildService:
         questions = QuestionRepository.get_questions_for_mental_health_issues(child_id)
 
         formatted_questions = [
-            {"question_id": q.id, "question": q.question, "mental_health_issue_id": q.mental_health_issue_id}
-            for q in questions
+            {
+                "question_id": q.id,
+                "question": q.question,
+                "mental_health_issue_id": q.related_mental_health_issues[0].mental_health_issue_id if q.related_mental_health_issues else None
+            }
+    for q in questions
         ]
 
         return assessment, formatted_questions, None

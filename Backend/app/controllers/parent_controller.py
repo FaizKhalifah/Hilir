@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify
 from app.services.parent_service import ParentService
 from app.models.parent import Parent
 from app.utils.db import db
@@ -14,9 +14,6 @@ from app.utils.gemini_api import GeminiAPI
 from app.repositories.child_repository import ChildRepository
 from app.services.chatbot_service import ChatbotService
 
-parent_bp = Blueprint("parent_bp", __name__)
-
-@parent_bp.route("/register", methods=["POST"])
 def register():
     data = request.json
     required_fields = ["username", "email", "password"]
@@ -24,15 +21,13 @@ def register():
         return jsonify({"error": "All fields are required"}), 400
 
     parent = ParentService.register_parent(data)
-
     return jsonify({
         "id": parent.id,
         "username": parent.username,
         "email": parent.email,
-        "message": "Registration successful! Check your email for OTP."
+        "message": "Registration successful! Your account is verified."
     }), 201
 
-@parent_bp.route("/confirm_otp", methods=["POST"])
 def confirm_otp():
     data = request.json
     email = data.get("email")
@@ -52,7 +47,6 @@ def confirm_otp():
     db.session.commit()
     return jsonify({"message": "OTP confirmed. Account verified."}), 200
 
-@parent_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
     email = data.get("email")
@@ -67,12 +61,10 @@ def login():
     token = generate_parent_jwt_token(parent)
     return jsonify({"message": "Login successful", "token": token}), 200
 
-@parent_bp.route("/all_parents", methods=["GET"])
 def get_all_parents():
     parents = Parent.query.all()
     return jsonify([{"id": p.id, "email": p.email, "username": p.username} for p in parents]), 200
 
-@parent_bp.route("/resend_otp", methods=["POST"])
 def resend_otp():
     data = request.json
     email = data.get("email")
@@ -81,14 +73,11 @@ def resend_otp():
         return jsonify({"error": "Email is required"}), 400
 
     parent, message = ParentService.resend_otp(email)
-
     if not parent:
         return jsonify({"error": message}), 404
 
     return jsonify({"message": message}), 200
 
-@parent_bp.route("/create_child", methods=["POST"])
-@parent_required
 def create_child():
     data = request.json
     child_data = {
@@ -110,8 +99,6 @@ def create_child():
         "age": child.age
     }), 201
 
-@parent_bp.route("/get_child_detail/<int:child_id>", methods=["GET"])
-@parent_required
 def get_child_detail(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -130,8 +117,6 @@ def get_child_detail(child_id):
     }
     return jsonify(child_data), 200
 
-@parent_bp.route("/get_all_children", methods=["GET"])
-@parent_required
 def get_all_children():
     parent_id = request.parent_id
     children = ChildService.get_all_children(parent_id)
@@ -147,8 +132,6 @@ def get_all_children():
     ]
     return jsonify(children_data), 200
 
-@parent_bp.route("/answer_questions/<int:child_id>", methods=["POST"])
-@parent_required
 def answer_questions(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -172,8 +155,6 @@ def answer_questions(child_id):
         "issues_above_threshold": issues_above_threshold
     }), 200
 
-@parent_bp.route("/get_child_report/<int:child_id>", methods=["GET"])
-@parent_required
 def get_child_report(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -186,8 +167,6 @@ def get_child_report(child_id):
     
     return jsonify(report), 200
 
-@parent_bp.route("/<int:child_id>/all_psychologists", methods=["GET"])
-@parent_required
 def get_all_psychologists_for_parent(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -205,8 +184,6 @@ def get_all_psychologists_for_parent(child_id):
     ]
     return jsonify(psychologists_data), 200
 
-@parent_bp.route("/child/<int:child_id>/available_exercises", methods=["GET"])
-@parent_required
 def get_available_exercises_for_child(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -218,8 +195,6 @@ def get_available_exercises_for_child(child_id):
 
     return jsonify(exercises), 200
 
-@parent_bp.route("/child/<int:child_id>/assessment/<int:assessment_id>/complete", methods=["POST"])
-@parent_required
 def complete_assessment(child_id, assessment_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -239,9 +214,7 @@ def complete_assessment(child_id, assessment_id):
         },
         "evaluation_questions": questions
     }), 200
-    
-@parent_bp.route("/child/<int:child_id>/submit_responses", methods=["POST"])
-@parent_required
+
 def submit_responses(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -258,8 +231,6 @@ def submit_responses(child_id):
 
     return jsonify({"message": "Responses submitted and mental health scores updated"}), 200
 
-@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>", methods=["GET"])
-@parent_required
 def get_psychologist_detail(child_id, psychologist_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -271,8 +242,6 @@ def get_psychologist_detail(child_id, psychologist_id):
 
     return jsonify(psychologist_data), 200
 
-@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>/book_consultation", methods=["POST"])
-@parent_required
 def book_consultation(child_id, psychologist_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -304,9 +273,7 @@ def book_consultation(child_id, psychologist_id):
         "start_time": str(consultation.start_time),
         "end_time": str(consultation.end_time)
     }), 201
-    
-@parent_bp.route("/child/<int:child_id>/assign_exercises", methods=["POST"])
-@parent_required
+
 def assign_exercises_to_child(child_id):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
@@ -324,8 +291,6 @@ def assign_exercises_to_child(child_id):
         ]
     }), 200
 
-@parent_bp.route('/child/<int:childid>/exercise', methods=['POST'])
-@parent_required
 def child_chat(childid):
     parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(childid, parent_id):
@@ -368,8 +333,6 @@ def child_chat(childid):
     status_code = 207 if db_errors else 200
     return jsonify(response_data), status_code
 
-@parent_bp.route('/child/<int:child_id>/assessment', methods=['POST'])
-@parent_required
 def generate_and_assign_assessments(child_id):
     child_personalizations = ChildRepository.get_child_personalizations(child_id)
     exceeded_issues = [
@@ -423,8 +386,6 @@ def generate_and_assign_assessments(child_id):
     status_code = 207 if db_errors else 200
     return jsonify(response_data), status_code
 
-@parent_bp.route('/child/<int:child_id>/chat', methods=['POST'])
-@parent_required
 def chat_with_bot(child_id):
     parent_message = request.json.get("message")
     if not parent_message:
@@ -451,3 +412,15 @@ def chat_with_bot(child_id):
         return jsonify({"error": "No valid response could be parsed from the chatbot."}), 500
 
     return jsonify({"bot_response": bot_response}), 200
+
+def show_personalized_questions():
+    questions = ParentService.get_personalized_questions()
+    return jsonify([
+        {"id": q.id, "question": q.question} for q in questions
+    ]), 200
+
+def show_all_parents():
+    parents = ParentService.get_all_parents()
+    return jsonify([
+        {"id": p.id, "username": p.username, "email": p.email} for p in parents
+    ]), 200
