@@ -350,6 +350,7 @@ def assign_exercises_to_child(child_id):
     parent_id = request.parent_id  # Retrieved from JWT
 
     # Verify the child belongs to the requesting parent
+    if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
     # Assign exercises using Gemini API
