@@ -343,3 +343,24 @@ def book_consultation(child_id, psychologist_id):
         "start_time": str(consultation.start_time),
         "end_time": str(consultation.end_time)
     }), 201
+    
+@parent_bp.route("/child/<int:child_id>/assign_exercises", methods=["POST"])
+@parent_required
+def assign_exercises_to_child(child_id):
+    parent_id = request.parent_id  # Retrieved from JWT
+
+    # Verify the child belongs to the requesting parent
+        return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
+
+    # Assign exercises using Gemini API
+    exercises, error = ChildService.assign_exercises_based_on_issues(child_id)
+    if error:
+        return jsonify({"error": error}), 400
+
+    return jsonify({
+        "message": "Exercises assigned successfully",
+        "exercises": [
+            {"title": exercise["title"], "description": exercise["description"]}
+            for exercise in exercises
+        ]
+    }), 200

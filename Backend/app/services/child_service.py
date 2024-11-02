@@ -12,6 +12,7 @@ from app.models.child_exercise import ChildExercise
 from app.models.mental_health_issue import MentalHealthIssue
 from app.models.assessment import Assessment
 from app.repositories.question_repository import QuestionRepository
+from app.utils.gemini_api import GeminiAPI
 
 class ChildService:
     @staticmethod
@@ -162,3 +163,33 @@ class ChildService:
             if personalization:
                 personalization.personalization_score += impact.score_impact * response_score
                 db.session.commit()
+    
+    @staticmethod
+    def assign_exercises_based_on_issues(child_id):
+        # Step 1: Get the issues that exceed the threshold
+        child_personalizations = ChildRepository.get_child_personalizations(child_id)
+        exceeded_issues = [
+            personalization.mental_health_issue_id
+            for personalization in child_personalizations
+            if personalization.personalization_score >= personalization.mental_health_issue.threshold_score
+        ]
+
+        # If no issues exceed the threshold, return without adding exercises
+        if not exceeded_issues:
+            return None, "No mental health issues exceed the threshold for additional exercises."
+
+        # Step 2: Call the Gemini API to get exercises
+        exercises, error = GeminiAPI.get_exercises_for_issues(exceeded_issues)
+        if error:
+            return None, f"Failed to fetch exercises from Gemini API: {error}"
+
+        # Step 3: Add exercises to the database and assign them to the child
+        for exercise_data in exercises:
+            exercise = ExerciseRepository.create_exercise(
+                title=exercise_data["title"],
+                description=exercise_data["description"],
+                mental_health_issue_id=exercise_data["mental_health_issue_id"]
+            )
+            ExerciseRepository.assign_exercise_to_child(child_id, exercise.id)
+
+        return exercises, None

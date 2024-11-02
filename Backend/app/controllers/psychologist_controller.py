@@ -164,3 +164,15 @@ def add_assessment_with_questions(child_id):
             "is_completed": assessment.is_completed
         }
     }), 201
+    
+# Route to get all assessments for a psychologist
+@psychologist_bp.route("/all_assessments", methods=["GET"])
+@psychologist_required
+def get_all_assessments():
+    psychologist_id = request.psychologist_id  # Retrieved from JWT
+    assessments, error = PsychologistService.get_all_assessments(psychologist_id)
+
+    if error:
+        return jsonify({"error": error}), 400
+
+    return jsonify(assessments), 200
