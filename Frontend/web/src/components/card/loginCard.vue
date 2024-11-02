@@ -2,8 +2,8 @@
     <baseCard title="Login" cardClass="login-card">
       <form @submit.prevent="handleLogin">
         <label>
-          Username:
-          <input type="text" v-model="username" />
+          Email:
+          <input type="text" v-model="email" />
         </label>
         <label>
           Password:
@@ -24,7 +24,7 @@
     },
     data() {
       return {
-        username: "",
+        email: "",
         password: ""
       };
     },
@@ -37,7 +37,7 @@
   };
   </script>
   
-  <style>
+  <style scoped>
   .login-card {
     width: 300px;
     margin: 0 auto;
