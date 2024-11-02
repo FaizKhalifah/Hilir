@@ -27,7 +27,7 @@
         <p>Age: {{ childDetail.age }}</p>
         <p>Gender: {{ childDetail.gender }}</p>
         <p>Report: {{ childDetail.report }}</p>
-        <button @click="goToAssessment">Go to Assessment</button>
+        <button @click="goToAssessment" style="margin-top: 1rem;">Go to Assessment</button>
         <button @click="goToExercise">Go to Exercise</button>
         <button @click="closeModal">Close</button>
       </div>
@@ -47,6 +47,7 @@
 
     .modal {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         position: fixed;
@@ -60,11 +61,31 @@
 
     .modal-content {
         background-color: white;
-        padding: 20px;
+        padding: 2rem;
         border-radius: 5px;
         width: 80%;
         text-align: center;
-        }
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .modal-content button{
+        background-color: #010030;
+        color: white;
+        transition: 0.3s;
+        border: 1px solid white;
+        cursor: pointer;
+        padding: 0.75rem 0rem;
+        border-radius: 1rem;
+        width: 15rem;
+    }
+
+    .modal-content button:hover{
+        color: #010030;
+        background-color: white;
+        border-color: #010030;
+    }
 
     .close {
         position: absolute;
@@ -149,8 +170,7 @@ import baseCard from '../base/baseCard.vue';
         
         const data = await response.json();
         console.log(data)
-        this.children = data; 
-        console.log(this.children[1])
+        this.children = data;
       } catch (error) {
         console.error('Fetch error:', error);
       }
