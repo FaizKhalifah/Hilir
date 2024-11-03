@@ -3,6 +3,7 @@ import ruangHilir from "@/views/dashboard/ruangHilir.vue";
 import assesment from "@/views/dashboard/assesment.vue";
 import exercise from "@/views/dashboard/exercise.vue";
 import prompt from "@/views/dashboard/prompt.vue";
+import schedule from "@/views/dashboard/schedule.vue";
 export default[
     {
         path:'/overview',
@@ -27,6 +28,12 @@ export default[
     path:'/prompt',
     name:'prompt',
     component:prompt,
+    meta: { requiresAuth: true}
+  },
+  {
+    path:'/schedule',
+    name:'schedule',
+    component:schedule,
     meta: { requiresAuth: true}
   },
   {

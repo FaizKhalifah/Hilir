@@ -1,6 +1,6 @@
 <template>
     <ul>
-        <li>Admin</li>
+        <li>Dashboard Psikolog</li>
             <li>
                 <div class="searchBar">
                     <div class="searchForm">
