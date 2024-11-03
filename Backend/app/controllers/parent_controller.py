@@ -1,6 +1,4 @@
-# app/controllers/parent_controller.py
-
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify
 from app.services.parent_service import ParentService
 from app.models.parent import Parent
 from app.utils.db import db
@@ -16,28 +14,20 @@ from app.utils.gemini_api import GeminiAPI
 from app.repositories.child_repository import ChildRepository
 from app.services.chatbot_service import ChatbotService
 
-parent_bp = Blueprint("parent_bp", __name__)
-
-@parent_bp.route("/register", methods=["POST"])
 def register():
     data = request.json
     required_fields = ["username", "email", "password"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "All fields are required"}), 400
 
-    # Create the parent account and handle OTP generation within the service
     parent = ParentService.register_parent(data)
-
     return jsonify({
         "id": parent.id,
         "username": parent.username,
         "email": parent.email,
-        "message": "Registration successful! Check your email for OTP."
+        "message": "Registration successful! Your account is verified."
     }), 201
 
-
-# Confirm OTP
-@parent_bp.route("/confirm_otp", methods=["POST"])
 def confirm_otp():
     data = request.json
     email = data.get("email")
@@ -57,7 +47,6 @@ def confirm_otp():
     db.session.commit()
     return jsonify({"message": "OTP confirmed. Account verified."}), 200
 
-@parent_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
     email = data.get("email")
@@ -72,15 +61,10 @@ def login():
     token = generate_parent_jwt_token(parent)
     return jsonify({"message": "Login successful", "token": token}), 200
 
-
-# Get all parents
-@parent_bp.route("/all_parents", methods=["GET"])
 def get_all_parents():
     parents = Parent.query.all()
     return jsonify([{"id": p.id, "email": p.email, "username": p.username} for p in parents]), 200
 
-# Resend OTP
-@parent_bp.route("/resend_otp", methods=["POST"])
 def resend_otp():
     data = request.json
     email = data.get("email")
@@ -89,27 +73,19 @@ def resend_otp():
         return jsonify({"error": "Email is required"}), 400
 
     parent, message = ParentService.resend_otp(email)
-
     if not parent:
         return jsonify({"error": message}), 404
 
     return jsonify({"message": message}), 200
 
-# Child-related routes
-@parent_bp.route("/create_child", methods=["POST"])
-@parent_required
 def create_child():
     data = request.json
-    
     child_data = {
         "name": data.get("name"),
         "date_of_birth": data.get("date_of_birth"),
         "gender": data.get("gender")
     }
-
-    # Retrieve the parent_id from the JWT token
     parent_id = request.parent_id
-
     if not all(child_data.values()):
         return jsonify({"error": "Name, date_of_birth, and gender are required"}), 400
 
@@ -123,17 +99,11 @@ def create_child():
         "age": child.age
     }), 201
 
-
-@parent_bp.route("/get_child_detail/<int:child_id>", methods=["GET"])
-@parent_required
 def get_child_detail(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Fetch the child details
     child = ChildService.get_child_detail(parent_id, child_id)
     if not child:
         return jsonify({"error": "Child not found"}), 404
@@ -147,11 +117,8 @@ def get_child_detail(child_id):
     }
     return jsonify(child_data), 200
 
-
-@parent_bp.route("/get_all_children", methods=["GET"])
-@parent_required
 def get_all_children():
-    parent_id = request.parent_id  # Retrieved from JWT
+    parent_id = request.parent_id
     children = ChildService.get_all_children(parent_id)
 
     children_data = [
@@ -165,18 +132,13 @@ def get_all_children():
     ]
     return jsonify(children_data), 200
 
-
-@parent_bp.route("/answer_questions/<int:child_id>", methods=["POST"])
-@parent_required
 def answer_questions(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
     data = request.json
-    answers = data.get("answers")  # Expected to be a list of {"question_id": int, "response_score": int}
+    answers = data.get("answers")
     
     if not answers:
         return jsonify({"error": "Answers are required"}), 400
@@ -193,16 +155,11 @@ def answer_questions(child_id):
         "issues_above_threshold": issues_above_threshold
     }), 200
 
-@parent_bp.route("/get_child_report/<int:child_id>", methods=["GET"])
-@parent_required
 def get_child_report(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Fetch the report from the service
     report, error = ChildService.get_child_mental_health_report(child_id)
     
     if error:
@@ -210,15 +167,11 @@ def get_child_report(child_id):
     
     return jsonify(report), 200
 
-@parent_bp.route("/<int:child_id>/all_psychologists", methods=["GET"])
-@parent_required
 def get_all_psychologists_for_parent(child_id):
-    # Ensure that the parent has access to the child
-    parent_id = request.parent_id  # Retrieved from JWT token
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Fetch all psychologists that can be viewed by a parent
     psychologists = PsychologistService.get_all_psychologists()
     psychologists_data = [
         {
@@ -231,33 +184,22 @@ def get_all_psychologists_for_parent(child_id):
     ]
     return jsonify(psychologists_data), 200
 
-
-@parent_bp.route("/child/<int:child_id>/available_exercises", methods=["GET"])
-@parent_required
 def get_available_exercises_for_child(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Retrieve available exercises
     exercises, error = ChildService.get_available_exercises_for_child(child_id)
     if error:
         return jsonify({"error": error}), 404
 
     return jsonify(exercises), 200
 
-@parent_bp.route("/child/<int:child_id>/assessment/<int:assessment_id>/complete", methods=["POST"])
-@parent_required
 def complete_assessment(child_id, assessment_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Ensure the child belongs to the parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Complete the assessment and generate questions for the parent
     assessment, questions, error = ChildService.complete_assessment_and_generate_questions(child_id, assessment_id)
     if error:
         return jsonify({"error": error}), 404
@@ -272,21 +214,16 @@ def complete_assessment(child_id, assessment_id):
         },
         "evaluation_questions": questions
     }), 200
-    
-@parent_bp.route("/child/<int:child_id>/submit_responses", methods=["POST"])
-@parent_required
-def submit_responses(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
 
-    # Check if the child belongs to the requesting parent
+def submit_responses(child_id):
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    data = request.json.get("responses", [])  # Expected: [{"question_id": int, "response_score": int}]
+    data = request.json.get("responses", [])
     if not data:
         return jsonify({"error": "Responses are required"}), 400
 
-    # Apply impacts for each response
     for response in data:
         question_id = response["question_id"]
         response_score = response["response_score"]
@@ -294,28 +231,19 @@ def submit_responses(child_id):
 
     return jsonify({"message": "Responses submitted and mental health scores updated"}), 200
 
-@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>", methods=["GET"])
-@parent_required
 def get_psychologist_detail(child_id, psychologist_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Fetch the psychologist details, including the schedule
     psychologist_data, error = PsychologistService.get_psychologist_details(psychologist_id)
     if error:
         return jsonify({"error": error}), 404
 
     return jsonify(psychologist_data), 200
 
-@parent_bp.route("/child/<int:child_id>/psychologist/<int:psychologist_id>/book_consultation", methods=["POST"])
-@parent_required
 def book_consultation(child_id, psychologist_id):
-    parent_id = request.parent_id  # Retrieved from JWT
-
-    # Check if the child belongs to the requesting parent
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
@@ -324,11 +252,9 @@ def book_consultation(child_id, psychologist_id):
     start_time = data.get("start_time")
     end_time = data.get("end_time")
 
-    # Validate required fields
     if not all([consultation_date, start_time, end_time]):
         return jsonify({"error": "Consultation date, start time, and end time are required"}), 400
 
-    # Book consultation through the service
     consultation, error = ConsultationService.book_consultation(
         child_id=child_id,
         psychologist_id=psychologist_id,
@@ -347,17 +273,12 @@ def book_consultation(child_id, psychologist_id):
         "start_time": str(consultation.start_time),
         "end_time": str(consultation.end_time)
     }), 201
-    
-@parent_bp.route("/child/<int:child_id>/assign_exercises", methods=["POST"])
-@parent_required
-def assign_exercises_to_child(child_id):
-    parent_id = request.parent_id  # Retrieved from JWT
 
-    # Verify the child belongs to the requesting parent
+def assign_exercises_to_child(child_id):
+    parent_id = request.parent_id
     if not ChildService.is_child_owned_by_parent(child_id, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Assign exercises using Gemini API
     exercises, error = ChildService.assign_exercises_based_on_issues(child_id)
     if error:
         return jsonify({"error": error}), 400
@@ -370,24 +291,15 @@ def assign_exercises_to_child(child_id):
         ]
     }), 200
 
-
-
-@parent_bp.route('/child/<int:childid>/exercise', methods=['POST'])
-@parent_required
 def child_chat(childid):
     parent_id = request.parent_id
-    
-    # Verify if the child belongs to the requesting parent
     if not ChildService.is_child_owned_by_parent(childid, parent_id):
         return jsonify({"error": "Access denied: Child does not belong to this parent"}), 403
 
-    # Generate exercises for the child based on mental health issues above threshold
     exercises, error = ChildService.assign_exercises_based_on_issues(childid)
-    
     if error:
         return jsonify({"error": error}), 500
 
-    # Store exercises in database
     stored_exercises = []
     db_errors = []
     
@@ -410,7 +322,6 @@ def child_chat(childid):
                 "assigned_date": date.today().isoformat()
             })
 
-    # If there were any database errors, include them in the response
     response_data = {
         "childid": childid,
         "exercises": stored_exercises,
@@ -419,17 +330,10 @@ def child_chat(childid):
     if db_errors:
         response_data["warnings"] = db_errors
 
-    # Return success even if some exercises failed to store
-    status_code = 207 if db_errors else 200  # 207 Multi-Status if partial success
+    status_code = 207 if db_errors else 200
     return jsonify(response_data), status_code
 
-@parent_bp.route('/child/<int:child_id>/assessment', methods=['POST'])
-@parent_required
 def generate_and_assign_assessments(child_id):
-    """
-    Generates and assigns multiple assessments for a child based on mental health needs.
-    """
-    # Retrieve mental health issues that exceed the threshold (limit to 3)
     child_personalizations = ChildRepository.get_child_personalizations(child_id)
     exceeded_issues = [
         {"id": personalization.mental_health_issue_id, "name": personalization.mental_health_issue.name}
@@ -440,26 +344,21 @@ def generate_and_assign_assessments(child_id):
     if not exceeded_issues:
         return jsonify({"error": "No mental health issues exceed the threshold for an assessment."}), 400
 
-    # Generate prompts for each mental health issue
     prompts = AssessmentService.generate_assessment_prompts(exceeded_issues)
     assessments = []
     db_errors = []
 
-    # Generate an assessment for each prompt
     for prompt, issue in zip(prompts, exceeded_issues):
-        # Get task description from Gemini API
         response_json, error = GeminiAPI.get_exercises_for_prompt(prompt)
         if error:
             db_errors.append(f"Failed to fetch assessment for {issue['name']} from Gemini API: {error}")
             continue
 
-        # Parse response for task description
         task_description = response_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
         if not task_description:
             db_errors.append(f"No valid task description for {issue['name']}.")
             continue
 
-        # Create and save the assessment
         assessment, db_error = AssessmentService.create_assessment_for_child(
             child_id=child_id,
             task_description=task_description,
@@ -477,7 +376,6 @@ def generate_and_assign_assessments(child_id):
                 "mental_health_issue_name": issue["name"]
             })
 
-    # If there were errors, include them in the response
     response_data = {
         "child_id": child_id,
         "assessments": assessments,
@@ -485,24 +383,15 @@ def generate_and_assign_assessments(child_id):
     if db_errors:
         response_data["warnings"] = db_errors
 
-    status_code = 207 if db_errors else 200  # 207 Multi-Status if partial success
+    status_code = 207 if db_errors else 200
     return jsonify(response_data), status_code
 
-@parent_bp.route('/child/<int:child_id>/chat', methods=['POST'])
-@parent_required
 def chat_with_bot(child_id):
-    """
-    Chatbot route to assist parents by answering questions based on the child’s mental health data.
-    """
-    # Retrieve the message from the parent
     parent_message = request.json.get("message")
     if not parent_message:
         return jsonify({"error": "Message is required"}), 400
 
-    # Use parent_id from JWT token
     parent_id = request.parent_id
-
-    # Fetch child’s mental health issues that exceed the threshold
     child_personalizations = ChildRepository.get_child_personalizations(child_id)
     mental_health_issues = [
         {"id": personalization.mental_health_issue_id, "name": personalization.mental_health_issue.name}
@@ -513,17 +402,25 @@ def chat_with_bot(child_id):
     if not mental_health_issues:
         return jsonify({"error": "No mental health issues exceed the threshold for this child."}), 400
 
-    # Generate chatbot prompt with child’s mental health context
     prompt = ChatbotService.generate_chatbot_prompt(parent_message, mental_health_issues)
-
-    # Get chatbot response using Gemini API
     response_json, error = GeminiAPI.get_exercises_for_prompt(prompt)
     if error:
         return jsonify({"error": f"Failed to fetch response from Gemini API: {error}"}), 500
 
-    # Extract response text
     bot_response = response_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
     if not bot_response:
         return jsonify({"error": "No valid response could be parsed from the chatbot."}), 500
 
     return jsonify({"bot_response": bot_response}), 200
+
+def show_personalized_questions():
+    questions = ParentService.get_personalized_questions()
+    return jsonify([
+        {"id": q.id, "question": q.question} for q in questions
+    ]), 200
+
+def show_all_parents():
+    parents = ParentService.get_all_parents()
+    return jsonify([
+        {"id": p.id, "username": p.username, "email": p.email} for p in parents
+    ]), 200

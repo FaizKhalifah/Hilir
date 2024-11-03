@@ -5,7 +5,7 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
-    print(f"Loaded SECRET_KEY: {SECRET_KEY}")  # Debugging line
+    print(f"Loaded SECRET_KEY: {SECRET_KEY}")  
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SUPABASE_URL = os.getenv("SUPABASE_URL")

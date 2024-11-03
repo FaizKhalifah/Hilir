@@ -5,4 +5,5 @@ python-dotenv
 supabase-py
 Flask-Mail
 JWT
-psycopg2
+psycopg2-binary
+Flask-Cors

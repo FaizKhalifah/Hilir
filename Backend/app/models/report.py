@@ -8,5 +8,4 @@ class Report(BaseModel):
     report_data = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.now())
 
-    # Relationship to the Child model
     child = db.relationship("Child", backref="reports", lazy=True)

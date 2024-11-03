@@ -1,4 +1,4 @@
-# app/models/psychologist.py
+
 
 from app.utils.db import db
 from app.models.base import BaseModel

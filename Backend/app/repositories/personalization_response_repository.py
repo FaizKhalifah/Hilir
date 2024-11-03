@@ -1,5 +1,3 @@
-# app/repositories/personalization_response_repository.py
-
 from app.models.personalization_response import PersonalizationResponse
 from app.models.question_mental_health import QuestionMentalHealth
 from app.models.child_personalization import ChildPersonalization
@@ -51,7 +49,6 @@ class PersonalizationResponseRepository:
         
         db.session.commit()
 
-        # Check if any mental health issues exceed their threshold
         issues_above_threshold = []
         for mental_health_issue_id, score in scores.items():
             issue = MentalHealthIssue.query.get(mental_health_issue_id)

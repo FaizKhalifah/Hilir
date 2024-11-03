@@ -1,5 +1,3 @@
-# app/models/child.py
-
 from app.utils.db import db
 from app.models.base import BaseModel
 from datetime import date
@@ -14,6 +12,5 @@ class Child(BaseModel):
 
     @property
     def age(self):
-        """Calculate the age of the child based on the date of birth."""
         today = date.today()
         return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))

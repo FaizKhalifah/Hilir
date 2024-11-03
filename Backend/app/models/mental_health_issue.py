@@ -6,6 +6,4 @@ class MentalHealthIssue(BaseModel):
     name = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=True)
     threshold_score = db.Column(db.Integer, nullable=False)
-
-    # Back-populates for bidirectional relationship
     related_questions = db.relationship("QuestionMentalHealth", back_populates="mental_health_issue", lazy=True)

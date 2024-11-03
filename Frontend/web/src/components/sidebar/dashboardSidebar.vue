@@ -3,9 +3,8 @@
         <ul>
             <li><router-link to="overview">Overview</router-link></li>
             <li><router-link to="/ruanghilir">Ruang hilir</router-link></li>
-            <li><router-link to="/admin/journals">History</router-link></li>
-            <li><router-link to="/admin/employees">Schedule</router-link></li>
-            <li><router-link to="/admin/students">Articles</router-link></li>
+            <li><router-link to="/prompt">Prompt</router-link></li>
+            <li><router-link to="/schedule">Schedule</router-link></li>
         </ul>
     </aside>
 </template>
