@@ -1,11 +1,6 @@
 package com.example.mobilehilir.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,11 +12,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,15 +22,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import com.example.mobilehilir.data.LoginRequest
 
 @Composable
-fun Login() {
+fun Login(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
     val backgroundColor = Color(0xFF3BA3FF)
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -86,12 +83,38 @@ fun Login() {
             shape = RoundedCornerShape(8.dp)
         )
 
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
         Button(
-            onClick = { /*TODO*/ },
+            onClick = {
+//                coroutineScope.launch {
+//                    val request = LoginRequest(email, password)
+//                    try {
+//                        // Panggil metode login dengan request
+//                        val response = RetrofitInstance.api.getAllChildren()
+//
+//                        // Periksa apakah login berhasil
+//                        if (response.success) {
+//                            navController.navigate("mainScreen") // Navigasi jika berhasil
+//                        } else {
+//                            errorMessage = response.message // Set pesan kesalahan dari response
+//                        }
+//                    } catch (e: HttpException) {
+//                        errorMessage = "HTTP error: ${e.code()}" // Menangani kesalahan HTTP
+//                    } catch (e: Exception) {
+//                        errorMessage = "An unexpected error occurred: ${e.message}" // Menangani kesalahan umum
+//                    }
+//                }
+            },
             colors = ButtonDefaults.buttonColors(backgroundColor),
             contentPadding = PaddingValues(16.dp),
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
@@ -100,6 +123,8 @@ fun Login() {
                 fontWeight = FontWeight.Bold
             )
         }
+
+
         val annotatedText = buildAnnotatedString {
             append("Tidak punya akun? ")
             pushStringAnnotation(tag = "SIGNUP", annotation = "signup")
@@ -119,17 +144,9 @@ fun Login() {
             onClick = { offset ->
                 annotatedText.getStringAnnotations(tag = "SIGNUP", start = offset, end = offset)
                     .firstOrNull()?.let {
-                        // Handle the "Daftar sekarang" click here
-                        // For example, navigate to the signup screen
                     }
             },
             modifier = Modifier.padding(top = 16.dp)
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginPreview() {
-    Login()
 }
