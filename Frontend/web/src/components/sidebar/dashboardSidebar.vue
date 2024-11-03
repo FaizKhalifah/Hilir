@@ -4,6 +4,7 @@
             <li><router-link to="overview">Overview</router-link></li>
             <li><router-link to="/ruanghilir">Ruang hilir</router-link></li>
             <li><router-link to="/prompt">Prompt</router-link></li>
+            <li><router-link to="/schedule">Schedule</router-link></li>
         </ul>
     </aside>
 </template>
